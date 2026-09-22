@@ -30,4 +30,36 @@ enum Permission: string
     case ReportsView = 'reports.view';
     case AuditView = 'audit.view';
     case SettingsManage = 'settings.manage';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::DashboardView => 'Consulter le tableau de bord',
+            self::BranchesView => 'Consulter les agences',
+            self::BranchesViewAll => 'Accéder à toutes les agences',
+            self::BranchesManage => 'Gérer les agences',
+            self::UsersManage => 'Gérer les utilisateurs',
+            self::RolesManage => 'Gérer les rôles',
+            self::CustomersView => 'Consulter les clients',
+            self::CustomersCreate => 'Créer des clients',
+            self::BeneficiariesView => 'Consulter les bénéficiaires',
+            self::BeneficiariesCreate => 'Créer des bénéficiaires',
+            self::TransfersView => 'Consulter les transferts',
+            self::TransfersCreate => 'Créer des transferts',
+            self::TransfersApprove => 'Approuver les transferts',
+            self::TransfersReject => 'Rejeter les transferts',
+            self::TransfersCancel => 'Annuler les transferts',
+            self::TransfersPay => 'Effectuer les paiements',
+            self::TransfersReverse => 'Extourner les transferts',
+            self::ExchangeRatesView => 'Consulter les taux de change',
+            self::ExchangeRatesManage => 'Configurer les taux de change',
+            self::FeeRulesView => 'Consulter les règles de frais',
+            self::FeeRulesManage => 'Configurer les règles de frais',
+            self::CashView => 'Consulter la trésorerie',
+            self::CashAdjust => 'Ajuster les caisses',
+            self::ReportsView => 'Consulter les rapports',
+            self::AuditView => 'Consulter le journal d’audit',
+            self::SettingsManage => 'Gérer les paramètres',
+        };
+    }
 }

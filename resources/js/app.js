@@ -7,17 +7,6 @@ passwordToggle?.addEventListener('click', () => {
     passwordToggle.setAttribute('aria-label', revealed ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
 });
 
-const helpDialog = document.getElementById('login-help');
-document.querySelector('[data-open-help]')?.addEventListener('click', () => helpDialog.showModal());
-helpDialog?.addEventListener('click', (event) => {
-    if (event.target === helpDialog) {
-        const bounds = helpDialog.getBoundingClientRect();
-        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
-            helpDialog.close();
-        }
-    }
-});
-
 const form = document.querySelector('[data-submit-form]');
 form?.addEventListener('submit', () => {
     const button = form.querySelector('[data-submit-button]');
@@ -36,5 +25,29 @@ window.addEventListener('pageshow', () => {
         button.querySelector('[data-button-label]').textContent = 'Se connecter';
         button.querySelector('.icon').hidden = false;
         button.querySelector('.button-spinner').hidden = true;
+    }
+});
+
+const menuToggle = document.querySelector('[data-menu-toggle]');
+const sidebar = document.getElementById('workspace-sidebar');
+const closeMenu = () => {
+    sidebar?.classList.remove('is-open');
+    menuToggle?.setAttribute('aria-expanded', 'false');
+    menuToggle?.setAttribute('aria-label', 'Afficher le menu');
+};
+menuToggle?.addEventListener('click', () => {
+    const open = sidebar.classList.toggle('is-open');
+    menuToggle.setAttribute('aria-expanded', String(open));
+    menuToggle.setAttribute('aria-label', open ? 'Masquer le menu' : 'Afficher le menu');
+});
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && sidebar?.classList.contains('is-open')) {
+        closeMenu();
+        menuToggle.focus();
+    }
+});
+document.addEventListener('click', (event) => {
+    if (sidebar && !sidebar.contains(event.target) && !menuToggle.contains(event.target)) {
+        closeMenu();
     }
 });

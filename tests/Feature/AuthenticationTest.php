@@ -20,7 +20,7 @@ class AuthenticationTest extends TestCase
     public function test_login_page_displays_the_french_form(): void
     {
         $this->get(route('login'))->assertOk()
-            ->assertSee('Votre espace Titan.')
+            ->assertSee('Connexion')
             ->assertSee('Se connecter')
             ->assertSee('name="_token"', false);
     }
