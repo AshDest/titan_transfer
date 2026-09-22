@@ -13,6 +13,15 @@ enum TransferStatus: string
     case Cancelled = 'CANCELLED';
     case Reversed = 'REVERSED';
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::Draft => 'Brouillon', self::Pending => 'En attente de validation',
+            self::Approved => 'Approuvé', self::ReadyForPayout => 'Prêt au retrait',
+            self::Paid => 'Payé', self::Rejected => 'Rejeté', self::Cancelled => 'Annulé', self::Reversed => 'Extourné',
+        };
+    }
+
     /** @return list<self> */
     public function allowedTransitions(): array
     {

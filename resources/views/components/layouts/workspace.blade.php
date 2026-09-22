@@ -5,9 +5,10 @@
         <aside class="sidebar" id="workspace-sidebar">
             <a href="{{ route('dashboard') }}" aria-label="Titan Transfer — Accueil"><x-brand /></a>
             <nav aria-label="Navigation principale" class="workspace-nav">
+                @can('transfers.create')<a href="{{ route('transfers.create') }}" class="new-operation"><x-icon name="plus" /> Nouvelle opération</a>@endcan
                 <div class="sidebar-label">OPÉRATIONS</div>
                 <x-nav-link route="dashboard" icon="grid">Vue d’ensemble</x-nav-link>
-                @can('transfers.view')<x-nav-link icon="arrow" pending>Transferts</x-nav-link>@endcan
+                @can('transfers.view')<x-nav-link route="transfers.index" icon="arrow">Transferts</x-nav-link>@endcan
                 @can('customers.view')<x-nav-link route="customers.index" icon="users">Clients</x-nav-link>@endcan
                 @can('beneficiaries.view')<x-nav-link route="beneficiaries.index" icon="users">Bénéficiaires</x-nav-link>@endcan
                 @can('cash.view')<x-nav-link icon="cash" pending>Trésorerie</x-nav-link>@endcan

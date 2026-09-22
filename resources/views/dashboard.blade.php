@@ -1,5 +1,5 @@
 <x-layouts.workspace title="Vue d’ensemble">
-                <div class="dashboard-heading"><div><span class="form-kicker">VUE D’ENSEMBLE</span><h1>Bienvenue, {{ $user->name }}.</h1><p>Retrouvez les informations de votre réseau Titan Transfer.</p></div><span class="pill"><span class="status-dot"></span> Session ouverte</span></div>
+                <div class="dashboard-heading"><div><span class="form-kicker">VUE D’ENSEMBLE</span><h1>Bienvenue, {{ $user->name }}.</h1><p>Retrouvez les informations de votre réseau Titan Transfer.</p></div>@can('transfers.create')<a class="primary-button compact-button" href="{{ route('transfers.create') }}"><x-icon name="plus" /> Nouvelle opération</a>@else<span class="pill"><span class="status-dot"></span> Session ouverte</span>@endcan</div>
                 <section class="summary-grid" aria-label="Résumé de votre espace">
                     <article class="summary-card"><span class="summary-icon"><x-icon name="branch" /></span><p>Agences accessibles</p><strong>{{ $branches->total() }}</strong><small>Votre réseau opérationnel</small></article>
                     @if ($customerCount !== null)<article class="summary-card"><span class="summary-icon"><x-icon name="users" /></span><p>Clients enregistrés</p><strong>{{ $customerCount }}</strong><small>Dans votre périmètre d’accès</small></article>@endif

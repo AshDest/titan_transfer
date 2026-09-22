@@ -7,6 +7,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExchangeRateController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\TransferController;
 use App\Http\Controllers\TransferFeeRuleController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\EnsureApplicationAccess;
@@ -22,6 +23,10 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::middleware(EnsureApplicationAccess::class)->group(function (): void {
         Route::get('/dashboard', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
+        Route::get('/transfers/people', [TransferController::class, 'people'])->name('transfers.people');
+        Route::post('/transfers/preview', [TransferController::class, 'preview'])->name('transfers.preview');
+        Route::post('/transfers/revise', [TransferController::class, 'revise'])->name('transfers.revise');
+        Route::resource('transfers', TransferController::class)->only(['index', 'create', 'store', 'show']);
         Route::resource('customers', CustomerController::class)->only(['index', 'create', 'store']);
         Route::resource('beneficiaries', BeneficiaryController::class)->only(['index', 'create', 'store']);
         Route::resource('branches', BranchController::class)->only(['index', 'create', 'store']);
