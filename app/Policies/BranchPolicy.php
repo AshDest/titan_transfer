@@ -20,7 +20,7 @@ class BranchPolicy
 
     public function create(User $user): bool
     {
-        return $user->can(Permission::BranchesManage->value);
+        return ! $user->isCashier() && $user->can(Permission::BranchesManage->value);
     }
 
     public function update(User $user, Branch $record): bool

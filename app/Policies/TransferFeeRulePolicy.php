@@ -20,7 +20,7 @@ class TransferFeeRulePolicy
 
     public function create(User $user): bool
     {
-        return $user->can(Permission::FeeRulesManage->value);
+        return ! $user->isCashier() && $user->can(Permission::FeeRulesManage->value);
     }
 
     public function update(User $user, TransferFeeRule $record): bool

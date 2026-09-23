@@ -66,7 +66,7 @@ class TransferInitiationTest extends TestCase
         $this->assertSame($this->cashier->id, $transfer->created_by);
         $this->assertSame(Customer::sole()->id, Beneficiary::sole()->customer_id);
         $this->assertDatabaseHas('transfer_events', ['transfer_id' => $transfer->id, 'user_id' => $this->cashier->id, 'action' => 'TRANSFER_CREATED']);
-        $this->get(route('transfers.show', $transfer))->assertOk()->assertSee('355.99 AED')->assertSee('Imprimer le reçu');
+        $this->get(route('transfers.show', $transfer))->assertOk()->assertSee('355,99 AED')->assertSee('Imprimer le reçu');
         $this->get(route('transfers.index'))->assertSee($transfer->reference);
     }
 
@@ -88,7 +88,7 @@ class TransferInitiationTest extends TestCase
 
         $this->get(route('transfers.show', $transfer))->assertOk()
             ->assertSee('data-auto-print', false)->assertSee('data-thermal-receipt', false)
-            ->assertSee('REÇU D’ENCAISSEMENT')->assertSee('355.99 AED')
+            ->assertSee('REÇU D’ENCAISSEMENT')->assertSee('355,99 AED')
             ->assertSee('En attente de validation')->assertSee('Imprimer le reçu · 80 mm');
         $this->get(route('transfers.show', $transfer))->assertOk()
             ->assertDontSee('data-auto-print', false)->assertSee('data-print-receipt', false);

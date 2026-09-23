@@ -16,15 +16,16 @@
         @endforeach
     </section>
     <dl class="thermal-amounts thermal-section">
-        <div><dt>Total encaissé</dt><dd>{{ $transfer->amount_received }} {{ $transfer->source_currency }}</dd></div>
-        <div><dt>Frais ({{ $transfer->fee_percentage }} %)</dt><dd>{{ $transfer->fee_amount }} {{ $transfer->source_currency }}</dd></div>
-        <div><dt>Montant net</dt><dd>{{ $transfer->net_amount }} {{ $transfer->source_currency }}</dd></div>
-        <div class="thermal-rate"><dt>Taux de change</dt><dd>1 {{ $transfer->source_currency }} = {{ $transfer->exchange_rate }} {{ $transfer->destination_currency }}</dd></div>
-        <div class="thermal-payout"><dt>À retirer</dt><dd>{{ $transfer->payout_amount }} {{ $transfer->destination_currency }}</dd></div>
+        <div><dt>Total encaissé</dt><dd>@money($transfer->amount_received) {{ $transfer->source_currency }}</dd></div>
+        <div><dt>Frais (<span title="Pourcentage exact : {{ $transfer->fee_percentage }} %">@percentage($transfer->fee_percentage)</span> %)</dt><dd>@money($transfer->fee_amount) {{ $transfer->source_currency }}</dd></div>
+        <div><dt>Montant net</dt><dd>@money($transfer->net_amount) {{ $transfer->source_currency }}</dd></div>
+        <div class="thermal-rate"><dt>Taux de change</dt><dd>1 {{ $transfer->source_currency }} = <span title="Taux exact : {{ $transfer->exchange_rate }}">@rate($transfer->exchange_rate)</span> {{ $transfer->destination_currency }}</dd></div>
+        <div class="thermal-payout"><dt>À retirer</dt><dd>@money($transfer->payout_amount) {{ $transfer->destination_currency }}</dd></div>
     </dl>
     <footer class="thermal-footer">
         <p><b>{{ $transfer->status->label() }}</b></p>
         @if($transfer->status === \App\Enums\TransferStatus::Pending)<p>Fonds disponibles après validation du transfert.</p>@endif
+        @if($transfer->status === \App\Enums\TransferStatus::Rejected)<p>Transfert rejeté. Contactez l’agence de départ pour le remboursement.</p>@endif
         <p>Conservez ce reçu. Merci de votre confiance.</p>
     </footer>
 </article>

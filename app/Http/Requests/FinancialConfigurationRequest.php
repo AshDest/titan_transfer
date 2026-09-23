@@ -2,13 +2,15 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ExchangeRate;
+use App\Models\TransferFeeRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FinancialConfigurationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can($this->routeIs('exchange-rates.*') ? 'exchange-rates.manage' : 'fee-rules.manage');
+        return $this->user()->can('create', $this->routeIs('exchange-rates.*') ? ExchangeRate::class : TransferFeeRule::class);
     }
 
     public function rules(): array

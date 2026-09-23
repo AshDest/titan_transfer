@@ -243,3 +243,18 @@ if (notificationMenu) {
     window.addEventListener('focus', refreshNotifications);
     timer = setTimeout(refreshNotifications, 20000);
 }
+
+document.querySelectorAll('[data-review-transfer]').forEach(reviewForm => {
+    reviewForm.addEventListener('submit', () => {
+        const button = reviewForm.querySelector('button');
+        button.dataset.originalLabel = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Enregistrement…';
+    });
+});
+window.addEventListener('pageshow', () => {
+    document.querySelectorAll('[data-review-transfer] button').forEach(button => {
+        button.disabled = false;
+        if (button.dataset.originalLabel) button.textContent = button.dataset.originalLabel;
+    });
+});

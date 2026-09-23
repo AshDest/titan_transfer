@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Permission;
 use App\Enums\RecordStatus;
+use App\Enums\Role;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -30,6 +31,11 @@ class User extends Authenticatable
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function isCashier(): bool
+    {
+        return $this->hasAnyRole([Role::SourceCashier->value, Role::DestinationCashier->value]);
     }
 
     public function canAccessBranch(Branch $branch): bool

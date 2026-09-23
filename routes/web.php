@@ -10,6 +10,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\TransferFeeRuleController;
+use App\Http\Controllers\TransferReviewController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\EnsureApplicationAccess;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,8 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         Route::get('/transfers/people', [TransferController::class, 'people'])->name('transfers.people');
         Route::post('/transfers/preview', [TransferController::class, 'preview'])->name('transfers.preview');
         Route::post('/transfers/revise', [TransferController::class, 'revise'])->name('transfers.revise');
+        Route::post('/transfers/{transfer}/approve', [TransferReviewController::class, 'approve'])->name('transfers.approve');
+        Route::post('/transfers/{transfer}/reject', [TransferReviewController::class, 'reject'])->name('transfers.reject');
         Route::resource('transfers', TransferController::class)->only(['index', 'create', 'store', 'show']);
         Route::resource('customers', CustomerController::class)->only(['index', 'create', 'store']);
         Route::resource('beneficiaries', BeneficiaryController::class)->only(['index', 'create', 'store']);

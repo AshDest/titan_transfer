@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Transfers\CreateTransfer;
 use App\Enums\RecordStatus;
+use App\Enums\TransferStatus;
 use App\Models\Beneficiary;
 use App\Models\Branch;
 use App\Models\Customer;
@@ -15,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -23,8 +25,9 @@ class TransferController extends Controller
     public function index(Request $request): View
     {
         Gate::authorize('viewAny', Transfer::class);
-        $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $request->validate(['q' => ['nullable', 'string', 'max:100'], 'status' => ['nullable', Rule::enum(TransferStatus::class)]]);
         $records = Transfer::visibleTo($request->user())->with(['sourceBranch', 'destinationBranch'])
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->when($request->filled('q'), fn ($query) => $query->where('reference', 'like', '%'.$request->string('q').'%'))
             ->latest('id')->paginate(15)->withQueryString();
 
@@ -116,7 +119,7 @@ class TransferController extends Controller
     public function show(Request $request, Transfer $transfer): View
     {
         Gate::authorize('view', $transfer);
-        $transfer->load(['sourceBranch', 'destinationBranch', 'events.actor', 'movements']);
+        $transfer->load(['sourceBranch', 'destinationBranch', 'events.actor', 'movements', 'approvedBy', 'rejectedBy']);
         $printReceipt = $request->session()->get('print_transfer') === $transfer->uuid;
         if ($printReceipt) {
             $request->session()->forget('print_transfer');

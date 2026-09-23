@@ -9,6 +9,7 @@ use App\Models\ExchangeRate;
 use App\Models\Transfer;
 use App\Models\TransferFeeRule;
 use App\Models\User;
+use App\Services\DecimalFormatter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notification;
 
@@ -20,7 +21,7 @@ class OperationRecorded extends Notification
         ExchangeRate::class => 'exchange-rates.view', TransferFeeRule::class => 'fee-rules.view',
     ];
 
-    public function __construct(public Model $subject, public User $actor) {}
+    public function __construct(public Model $subject, public User $actor, public string $event = 'created') {}
 
     /** @return list<string> */
     public function via(object $notifiable): array
@@ -33,15 +34,19 @@ class OperationRecorded extends Notification
     {
         $record = $this->subject;
         [$title, $message] = match ($record::class) {
-            Transfer::class => ['Transfert enregistré', $record->reference.' : '.$record->amount_received.' '.$record->source_currency.' encaissés. En attente de validation.'],
+            Transfer::class => match ($this->event) {
+                'approved' => ['Transfert approuvé', $record->reference.' a été validé et transmis à l’agence de retrait.'],
+                'rejected' => ['Transfert rejeté', $record->reference.' a été rejeté. Consultez le motif dans le détail du transfert.'],
+                default => ['Transfert enregistré', $record->reference.' : '.DecimalFormatter::money($record->amount_received).' '.$record->source_currency.' encaissés. En attente de validation.'],
+            },
             Customer::class => ['Nouveau client', $record->first_name.' '.$record->last_name.' a été enregistré.'],
             Beneficiary::class => ['Nouveau bénéficiaire', $record->first_name.' '.$record->last_name.' a été enregistré.'],
             Branch::class => ['Nouvelle agence', 'L’agence '.$record->name.' ('.$record->code.') a été créée.'],
-            ExchangeRate::class => ['Taux de change enregistré', '1 '.$record->from_currency.' = '.$record->rate.' '.$record->to_currency.'. Nouvelle version '.($record->active ? 'active' : 'inactive').'.'],
-            TransferFeeRule::class => ['Règle de frais enregistrée', $record->name.' : '.$record->percentage.' % en '.$record->source_currency.'.'],
+            ExchangeRate::class => ['Taux de change enregistré', '1 '.$record->from_currency.' = '.DecimalFormatter::rate($record->rate).' '.$record->to_currency.'. Nouvelle version '.($record->active ? 'active' : 'inactive').'.'],
+            TransferFeeRule::class => ['Règle de frais enregistrée', $record->name.' : '.DecimalFormatter::percentage($record->percentage).' % en '.$record->source_currency.'.'],
         };
 
         return ['subject_type' => $record->getMorphClass(), 'subject_id' => $record->getKey(),
-            'title' => $title, 'message' => $message, 'actor' => $this->actor->name];
+            'event' => $this->event, 'title' => $title, 'message' => $message, 'actor' => $this->actor->name];
     }
 }

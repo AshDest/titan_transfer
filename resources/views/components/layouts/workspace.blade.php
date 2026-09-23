@@ -8,10 +8,12 @@
                 @can('transfers.create')<a href="{{ route('transfers.create') }}" class="new-operation"><x-icon name="plus" /> Nouvelle opération</a>@endcan
                 <div class="sidebar-label">OPÉRATIONS</div>
                 <x-nav-link route="dashboard" icon="grid">Vue d’ensemble</x-nav-link>
+                @can('reviewAny', \App\Models\Transfer::class)<a href="{{ route('transfers.index', ['status' => 'PENDING']) }}" class="nav-link"><x-icon name="check" /><span>Transferts à valider</span></a>@endcan
                 @can('transfers.view')<x-nav-link route="transfers.index" icon="arrow">Transferts</x-nav-link>@endcan
                 @can('customers.view')<x-nav-link route="customers.index" icon="users">Clients</x-nav-link>@endcan
                 @can('beneficiaries.view')<x-nav-link route="beneficiaries.index" icon="users">Bénéficiaires</x-nav-link>@endcan
                 @can('cash.view')<x-nav-link icon="cash" pending>Trésorerie</x-nav-link>@endcan
+                @unless($user->isCashier())
                 @canany(['exchange-rates.view', 'fee-rules.view', 'reports.view'])
                     <div class="sidebar-label">FINANCE</div>
                     @can('exchange-rates.view')<x-nav-link route="exchange-rates.index" icon="exchange">Taux de change</x-nav-link>@endcan
@@ -26,6 +28,7 @@
                     @can('audit.view')<x-nav-link icon="report" pending>Journal d’audit</x-nav-link>@endcan
                     @can('settings.manage')<x-nav-link icon="settings" pending>Paramètres</x-nav-link>@endcan
                 @endcanany
+                @endunless
             </nav>
             <div class="sidebar-bottom"><span class="avatar">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span><div><strong>{{ $user->name }}</strong><span>{{ $user->branch?->name ?? 'Administration' }}</span></div></div>
         </aside>

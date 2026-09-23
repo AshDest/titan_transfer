@@ -20,7 +20,7 @@ class ExchangeRatePolicy
 
     public function create(User $user): bool
     {
-        return $user->can(Permission::ExchangeRatesManage->value);
+        return ! $user->isCashier() && $user->can(Permission::ExchangeRatesManage->value);
     }
 
     public function update(User $user, ExchangeRate $record): bool
