@@ -153,4 +153,93 @@ window.addEventListener('pageshow', () => {
         confirmButton.textContent = 'Confirmer l’opération';
     }
 });
-document.querySelector('[data-print-receipt]')?.addEventListener('click', () => window.print());
+const thermalReceipt = document.querySelector('[data-thermal-receipt]');
+if (thermalReceipt) {
+    const pageStyle = document.createElement('style');
+    document.head.append(pageStyle);
+    const prepareReceiptPage = () => {
+        thermalReceipt.classList.add('is-measuring');
+        // CSS pixels use 96 dpi. Add the two 4 mm margins and rounding clearance.
+        const heightMm = Math.ceil(thermalReceipt.getBoundingClientRect().height * 25.4 / 96) + 10;
+        thermalReceipt.classList.remove('is-measuring');
+        pageStyle.textContent = `@media print { @page titan-receipt { size: 80mm ${heightMm}mm; margin: 4mm; } }`;
+    };
+    const printReceipt = () => {
+        prepareReceiptPage();
+        window.print();
+    };
+    window.addEventListener('beforeprint', prepareReceiptPage);
+    document.querySelector('[data-print-receipt]')?.addEventListener('click', printReceipt);
+    if (thermalReceipt.hasAttribute('data-auto-print')) {
+        const autoPrint = async () => {
+            thermalReceipt.removeAttribute('data-auto-print');
+            await document.fonts.ready;
+            requestAnimationFrame(printReceipt);
+        };
+        if (document.readyState === 'complete') autoPrint();
+        else window.addEventListener('load', autoPrint, { once: true });
+    }
+}
+
+const notificationMenu = document.querySelector('[data-notification-menu]');
+if (notificationMenu) {
+    const toggle = notificationMenu.querySelector('[data-notification-toggle]');
+    const badge = notificationMenu.querySelector('[data-unread-badge]');
+    const status = notificationMenu.querySelector('[data-notification-refresh]');
+    let previousCount = Number(toggle.getAttribute('aria-label').match(/\d+/)?.[0] || 0);
+    let timer;
+    let refreshing = false;
+    let stopped = false;
+    const refreshNotifications = async () => {
+        clearTimeout(timer);
+        if (refreshing || stopped || document.hidden) return;
+        refreshing = true;
+        try {
+            const response = await fetch(notificationMenu.dataset.feedUrl, {
+                headers: { Accept: 'application/json' }, cache: 'no-store', signal: AbortSignal.timeout(10000),
+            });
+            if ([401, 403, 419].includes(response.status)) {
+                stopped = true;
+                status.textContent = 'Session expirée ou accès modifié. Rechargez la page.';
+                return;
+            }
+            if (!response.ok) throw new Error('Notifications unavailable');
+            const data = await response.json();
+            badge.hidden = data.unread_count === 0;
+            badge.textContent = data.unread_count > 99 ? '99+' : String(data.unread_count);
+            toggle.setAttribute('aria-label', `Notifications : ${data.unread_count} non lues`);
+            // Keep keyboard focus on the current notification while refreshing the count.
+            if (!notificationMenu.querySelector('[data-notification-preview]').contains(document.activeElement)) {
+                notificationMenu.querySelector('[data-notification-preview]').innerHTML = data.html;
+            }
+            if (data.unread_count > previousCount) {
+                notificationMenu.querySelector('[data-notification-announcement]').textContent = `${data.unread_count} notifications non lues.`;
+            }
+            previousCount = data.unread_count;
+            status.textContent = 'À jour · actualisation automatique';
+        } catch {
+            status.textContent = 'Actualisation indisponible. Nouvelle tentative automatique.';
+        } finally {
+            refreshing = false;
+            if (!stopped && !document.hidden) timer = setTimeout(refreshNotifications, 20000);
+        }
+    };
+    notificationMenu.addEventListener('toggle', () => {
+        if (notificationMenu.open) refreshNotifications();
+    });
+    document.addEventListener('click', event => {
+        if (!notificationMenu.contains(event.target)) notificationMenu.open = false;
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && notificationMenu.open) {
+            notificationMenu.open = false;
+            toggle.focus();
+        }
+    });
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) clearTimeout(timer);
+        else refreshNotifications();
+    });
+    window.addEventListener('focus', refreshNotifications);
+    timer = setTimeout(refreshNotifications, 20000);
+}

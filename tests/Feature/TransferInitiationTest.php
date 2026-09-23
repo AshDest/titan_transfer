@@ -82,6 +82,28 @@ class TransferInitiationTest extends TestCase
         $this->assertSame('100.00', CashAccount::sole()->balance);
     }
 
+    public function test_confirmation_requests_receipt_printing_once_and_manual_reprinting_remains_available(): void
+    {
+        $transfer = $this->createOperation();
+
+        $this->get(route('transfers.show', $transfer))->assertOk()
+            ->assertSee('data-auto-print', false)->assertSee('data-thermal-receipt', false)
+            ->assertSee('REÇU D’ENCAISSEMENT')->assertSee('355.99 AED')
+            ->assertSee('En attente de validation')->assertSee('Imprimer le reçu · 80 mm');
+        $this->get(route('transfers.show', $transfer))->assertOk()
+            ->assertDontSee('data-auto-print', false)->assertSee('data-print-receipt', false);
+        $this->assertDatabaseCount('transfers', 1);
+        $this->assertDatabaseCount('cash_movements', 1);
+    }
+
+    public function test_opening_an_existing_transfer_does_not_automatically_print(): void
+    {
+        $transfer = Transfer::factory()->create(['source_branch_id' => $this->cashier->branch_id]);
+
+        $this->actingAs($this->cashier)->get(route('transfers.show', $transfer))->assertOk()
+            ->assertSee('data-thermal-receipt', false)->assertDontSee('data-auto-print', false);
+    }
+
     public function test_cash_confirmation_is_required_and_input_is_preserved(): void
     {
         $token = $this->previewToken();

@@ -108,15 +108,21 @@ class TransferController extends Controller
             return redirect()->route('transfers.create')->withInput($payload['data'])->withErrors($exception->errors());
         }
 
-        return redirect()->route('transfers.show', $transfer)->with('status', 'Opération enregistrée. Le transfert est en attente de validation.');
+        return redirect()->route('transfers.show', $transfer)
+            ->with('status', 'Opération enregistrée. Le transfert est en attente de validation.')
+            ->with('print_transfer', $transfer->uuid);
     }
 
-    public function show(Transfer $transfer): View
+    public function show(Request $request, Transfer $transfer): View
     {
         Gate::authorize('view', $transfer);
         $transfer->load(['sourceBranch', 'destinationBranch', 'events.actor', 'movements']);
+        $printReceipt = $request->session()->get('print_transfer') === $transfer->uuid;
+        if ($printReceipt) {
+            $request->session()->forget('print_transfer');
+        }
 
-        return view('transfers.show', compact('transfer'));
+        return view('transfers.show', compact('transfer', 'printReceipt'));
     }
 
     /** @return array<string, mixed> */

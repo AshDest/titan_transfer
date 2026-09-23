@@ -3,7 +3,7 @@
 <x-layouts.base :title="$title">
     <div class="workspace">
         <aside class="sidebar" id="workspace-sidebar">
-            <a href="{{ route('dashboard') }}" aria-label="Titan Transfer — Accueil"><x-brand /></a>
+            <a href="{{ route('dashboard') }}" aria-label="Titan Transfer — Accueil"><x-brand inverse /></a>
             <nav aria-label="Navigation principale" class="workspace-nav">
                 @can('transfers.create')<a href="{{ route('transfers.create') }}" class="new-operation"><x-icon name="plus" /> Nouvelle opération</a>@endcan
                 <div class="sidebar-label">OPÉRATIONS</div>
@@ -32,7 +32,10 @@
         <div class="workspace-main">
             <header class="workspace-header">
                 <div class="header-title"><button type="button" class="menu-toggle" data-menu-toggle aria-label="Afficher le menu" aria-controls="workspace-sidebar" aria-expanded="false"><x-icon name="menu" /></button><span>{{ $title }}</span></div>
-                <form method="POST" action="{{ route('logout') }}">@csrf<button class="logout-button"><x-icon name="logout" /> Se déconnecter</button></form>
+                <div class="header-actions">
+                    <x-notification-menu />
+                    <form method="POST" action="{{ route('logout') }}">@csrf<button class="logout-button" aria-label="Se déconnecter"><x-icon name="logout" /> <span>Se déconnecter</span></button></form>
+                </div>
             </header>
             <main class="dashboard-content">
                 @if(session('status'))<div class="notice notice-success page-notice" role="status"><x-icon name="check" />{{ session('status') }}</div>@endif

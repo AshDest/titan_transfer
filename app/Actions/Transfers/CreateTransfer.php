@@ -13,6 +13,7 @@ use App\Models\CashMovement;
 use App\Models\Transfer;
 use App\Models\TransferEvent;
 use App\Models\User;
+use App\Services\OperationNotifications;
 use App\Services\TransferPricing;
 use App\Validation\TransferInput;
 use Brick\Math\BigDecimal;
@@ -104,6 +105,8 @@ final class CreateTransfer
                 'new_values' => [...$review['quote']->attributes(), 'status' => TransferStatus::Pending->value, 'cash_movement_id' => $movement->id],
                 'ip_address' => $ip,
             ])->save();
+
+            app(OperationNotifications::class)->record($transfer, $actor);
 
             return $transfer;
         }, 3);

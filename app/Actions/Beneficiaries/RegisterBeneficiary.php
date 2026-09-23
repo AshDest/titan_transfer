@@ -7,6 +7,7 @@ use App\Models\Beneficiary;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\User;
+use App\Services\OperationNotifications;
 use App\Validation\PersonRules;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -32,6 +33,8 @@ final class RegisterBeneficiary
             $beneficiary->branch()->associate($branch);
             $beneficiary->createdBy()->associate($actor);
             $beneficiary->save();
+
+            app(OperationNotifications::class)->record($beneficiary, $actor);
 
             return $beneficiary->refresh();
         });

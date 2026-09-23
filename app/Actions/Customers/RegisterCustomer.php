@@ -5,6 +5,7 @@ namespace App\Actions\Customers;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\User;
+use App\Services\OperationNotifications;
 use App\Validation\PersonRules;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -27,6 +28,8 @@ final class RegisterCustomer
             $customer->branch()->associate($branch);
             $customer->createdBy()->associate($actor);
             $customer->save();
+
+            app(OperationNotifications::class)->record($customer, $actor);
 
             return $customer->refresh();
         });

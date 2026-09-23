@@ -4,6 +4,8 @@ namespace App\Actions\Branches;
 
 use App\Models\Branch;
 use App\Models\User;
+use App\Services\OperationNotifications;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -24,6 +26,11 @@ final class CreateBranch
             'timezone' => ['required', 'timezone:all', 'max:64'],
         ])->validate();
 
-        return Branch::query()->create($data)->refresh();
+        return DB::transaction(function () use ($actor, $data): Branch {
+            $branch = Branch::query()->create($data)->refresh();
+            app(OperationNotifications::class)->record($branch, $actor);
+
+            return $branch;
+        });
     }
 }

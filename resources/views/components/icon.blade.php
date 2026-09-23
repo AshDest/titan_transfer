@@ -1,6 +1,7 @@
 @props(['name'])
 <svg {{ $attributes->class(['icon']) }} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     @switch($name)
+        @case('bell')<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>@break
         @case('menu')<path d="M4 6h16M4 12h16M4 18h16"/>@break
         @case('plus')<path d="M12 4v16M4 12h16"/>@break
         @case('cash')<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M5 9h1m12 6h1"/>@break

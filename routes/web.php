@@ -6,6 +6,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExchangeRateController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\TransferFeeRuleController;
@@ -22,6 +23,11 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware(['auth', 'auth.session'])->group(function (): void {
     Route::middleware(EnsureApplicationAccess::class)->group(function (): void {
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/feed', [NotificationController::class, 'feed'])->name('notifications.feed');
+        Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::post('/notifications/{notification}/open', [NotificationController::class, 'open'])->whereUuid('notification')->name('notifications.open');
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->whereUuid('notification')->name('notifications.read');
         Route::get('/dashboard', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
         Route::get('/transfers/people', [TransferController::class, 'people'])->name('transfers.people');
         Route::post('/transfers/preview', [TransferController::class, 'preview'])->name('transfers.preview');

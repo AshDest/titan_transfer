@@ -4,6 +4,8 @@ namespace App\Actions\Finance;
 
 use App\Models\ExchangeRate;
 use App\Models\User;
+use App\Services\OperationNotifications;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 
@@ -23,10 +25,15 @@ final class RecordExchangeRate
             'active' => ['sometimes', 'boolean'],
         ])->validate();
 
-        $rate = new ExchangeRate($data);
-        $rate->createdBy()->associate($actor);
-        $rate->save();
+        return DB::transaction(function () use ($actor, $data): ExchangeRate {
+            $rate = new ExchangeRate($data);
+            $rate->createdBy()->associate($actor);
+            $rate->save();
 
-        return $rate->refresh();
+            $rate->refresh();
+            app(OperationNotifications::class)->record($rate, $actor);
+
+            return $rate;
+        });
     }
 }

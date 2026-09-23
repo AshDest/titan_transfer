@@ -6,7 +6,9 @@ use App\Enums\RecordStatus;
 use App\Models\Branch;
 use App\Models\TransferFeeRule;
 use App\Models\User;
+use App\Services\OperationNotifications;
 use Brick\Math\BigDecimal;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -39,10 +41,15 @@ final class RecordTransferFeeRule
             ]);
         }
 
-        $rule = new TransferFeeRule($data);
-        $rule->createdBy()->associate($actor);
-        $rule->save();
+        return DB::transaction(function () use ($actor, $data): TransferFeeRule {
+            $rule = new TransferFeeRule($data);
+            $rule->createdBy()->associate($actor);
+            $rule->save();
 
-        return $rule->refresh();
+            $rule->refresh();
+            app(OperationNotifications::class)->record($rule, $actor);
+
+            return $rule;
+        });
     }
 }
