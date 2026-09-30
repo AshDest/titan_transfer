@@ -57,7 +57,7 @@
         <section class="transfer-section">
             <h2><span>4</span> Montant de l’opération</h2>
             <div class="form-grid">
-                <x-field name="amount_received" label="Montant total à encaisser" required inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" placeholder="Ex. 100.00" hint="Frais inclus. Le montant net, le taux et la somme à retirer seront affichés à l’étape suivante." />
+                <x-field name="amount_received" label="Montant total à encaisser" required inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" placeholder="Ex. 100.00" hint="Frais inclus. Le pourcentage dépend de la tranche du montant encaissé et du trajet. La tranche, les frais et la somme à retirer seront affichés à l’étape suivante." />
                 <div class="transfer-currency"><span>Devise d’encaissement</span><strong data-source-currency>—</strong></div>
             </div>
             <x-field name="notes" label="Note (facultatif)" maxlength="1000" />

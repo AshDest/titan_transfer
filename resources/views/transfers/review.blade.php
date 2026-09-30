@@ -7,6 +7,15 @@
                 <div><span>{{ $label }} @if($data[$party.'_mode'] === 'new')<small class="pill">Nouveau</small>@endif</span><strong>{{ $snapshot[$party]['first_name'] }} {{ $snapshot[$party]['last_name'] }}</strong><p>{{ $snapshot[$party]['phone'] }} · {{ $snapshot[$party]['country'] }}</p></div>
             @endforeach
         </div>
+        <p class="form-context"><strong>Tranche de frais appliquée : {{ $fee->name }}</strong><br>
+            À partir de @money($fee->minimum_amount ?? '0.00') {{ $source->default_currency }}
+            @if($fee->maximum_amount !== null)
+                jusqu’à @money($fee->maximum_amount) {{ $source->default_currency }} inclus.
+            @else
+                sans plafond.
+            @endif
+            <span title="Pourcentage exact : {{ $fee->percentage }} %">@percentage($fee->percentage) %</span> sur la totalité du montant encaissé.
+        </p>
         <x-transfer-summary :amount="$quote->amountReceived" :percentage="$quote->feePercentage" :fee="$quote->feeAmount" :net="$quote->netAmount" :rate="$quote->exchangeRate" :payout="$quote->payoutAmount" :source-currency="$source->default_currency" :destination-currency="$destination->default_currency" />
         @if($data['notes'] ?? null)<p class="form-context">{{ $data['notes'] }}</p>@endif
         <form method="POST" action="{{ route('transfers.store') }}" data-confirm-transfer>

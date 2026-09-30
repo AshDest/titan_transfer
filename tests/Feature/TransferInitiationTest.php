@@ -275,6 +275,42 @@ class TransferInitiationTest extends TestCase
         $this->actingAs($this->cashier)->post(route('transfers.preview'), $this->input())->assertSessionHasErrors('amount_received');
     }
 
+    #[DataProvider('feeTiers')]
+    public function test_fee_percentage_is_selected_by_amount_tier_and_saved_on_confirmation(string $amount, string $percentage, string $fee): void
+    {
+        $this->freezeTime();
+        foreach ([['0.00', '100.00', '3.0000'], ['100.01', '1000.00', '2.0000'], ['1000.01', null, '1.0000']] as [$minimum, $maximum, $rate]) {
+            TransferFeeRule::factory()->create([
+                'name' => 'Tranche du trajet', 'source_branch_id' => $this->cashier->branch_id,
+                'destination_branch_id' => $this->destination->id, 'minimum_amount' => $minimum,
+                'maximum_amount' => $maximum, 'percentage' => $rate,
+            ]);
+        }
+
+        $response = $this->actingAs($this->cashier)->post(route('transfers.preview'), [...$this->input(), 'amount_received' => $amount]);
+
+        $response->assertSee('Tranche de frais appliquée : Tranche du trajet');
+        $this->assertSame($percentage, $response->viewData('quote')->feePercentage);
+        $this->assertSame($fee, $response->viewData('quote')->feeAmount);
+        $this->post(route('transfers.store'), ['review_token' => $response->viewData('token'), 'cash_received' => '1'])->assertSessionHasNoErrors();
+        $transfer = Transfer::sole();
+        $this->assertSame($percentage, $transfer->fee_percentage);
+        $this->assertSame($fee, $transfer->fee_amount);
+        $this->assertSame($response->viewData('fee')->id, $transfer->transfer_fee_rule_id);
+    }
+
+    public static function feeTiers(): array
+    {
+        return [
+            'first tier' => ['50.00', '3.0000', '1.50'],
+            'first upper bound' => ['100.00', '3.0000', '3.00'],
+            'second lower bound' => ['100.01', '2.0000', '2.00'],
+            'second upper bound' => ['1000.00', '2.0000', '20.00'],
+            'last lower bound' => ['1000.01', '1.0000', '10.00'],
+            'no upper limit' => ['2500.00', '1.0000', '25.00'],
+        ];
+    }
+
     public function test_committed_transfer_cannot_be_edited_in_place(): void
     {
         $transfer = $this->createOperation();

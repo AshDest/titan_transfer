@@ -9,6 +9,8 @@ use App\Models\Beneficiary;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Transfer;
+use App\Services\TransferTotals;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,16 +24,33 @@ use Illuminate\View\View;
 
 class TransferController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, TransferTotals $calculator): View
     {
         Gate::authorize('viewAny', Transfer::class);
-        $request->validate(['q' => ['nullable', 'string', 'max:100'], 'status' => ['nullable', Rule::enum(TransferStatus::class)]]);
-        $records = Transfer::visibleTo($request->user())->with(['sourceBranch', 'destinationBranch'])
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', Rule::enum(TransferStatus::class)],
+            'date_from' => ['bail', 'nullable', 'string', 'date_format:Y-m-d'],
+            'date_to' => ['bail', 'nullable', 'string', 'date_format:Y-m-d', ...($request->filled('date_from') ? ['after_or_equal:date_from'] : [])],
+        ], [
+            'date_from.date_format' => 'La date de début doit être une date valide au format AAAA-MM-JJ.',
+            'date_to.date_format' => 'La date de fin doit être une date valide au format AAAA-MM-JJ.',
+            'date_from.string' => 'La date de début doit être une date valide.',
+            'date_to.string' => 'La date de fin doit être une date valide.',
+            'date_to.after_or_equal' => 'La date de fin doit être égale ou postérieure à la date de début.',
+        ]);
+        $timezone = $request->user()->branch?->timezone ?? 'UTC';
+        $dateFrom = ! empty($filters['date_from']) ? CarbonImmutable::createFromFormat('!Y-m-d', $filters['date_from'], $timezone)->utc() : null;
+        $dateUntil = ! empty($filters['date_to']) ? CarbonImmutable::createFromFormat('!Y-m-d', $filters['date_to'], $timezone)->addDay()->utc() : null;
+        $query = Transfer::visibleTo($request->user())
+            ->when($dateFrom, fn ($query) => $query->where('created_at', '>=', $dateFrom))
+            ->when($dateUntil, fn ($query) => $query->where('created_at', '<', $dateUntil))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
-            ->when($request->filled('q'), fn ($query) => $query->where('reference', 'like', '%'.$request->string('q').'%'))
-            ->latest('id')->paginate(15)->withQueryString();
+            ->when($request->filled('q'), fn ($query) => $query->where('reference', 'like', '%'.$request->string('q').'%'));
+        $totals = $calculator->calculate($query);
+        $records = $query->with(['sourceBranch', 'destinationBranch'])->latest('id')->paginate(15)->withQueryString();
 
-        return view('transfers.index', compact('records'));
+        return view('transfers.index', compact('records', 'totals', 'timezone'));
     }
 
     public function create(Request $request): View
