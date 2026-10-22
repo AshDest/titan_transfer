@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CashMovementType;
+use App\Enums\FeeType;
 use App\Enums\TransferStatus;
 use App\Models\Concerns\PreservesFinancialHistory;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,7 +21,7 @@ class Transfer extends Model
 
     protected function casts(): array
     {
-        return ['approved_at' => 'datetime', 'rejected_at' => 'datetime', 'parties_snapshot' => 'array', 'status' => TransferStatus::class,
+        return ['fee_type' => FeeType::class, 'approved_at' => 'datetime', 'rejected_at' => 'datetime', 'parties_snapshot' => 'array', 'status' => TransferStatus::class,
             'amount_received' => 'decimal:2', 'fee_percentage' => 'decimal:4', 'fee_amount' => 'decimal:2',
             'net_amount' => 'decimal:2', 'exchange_rate' => 'decimal:6', 'payout_amount' => 'decimal:2'];
     }

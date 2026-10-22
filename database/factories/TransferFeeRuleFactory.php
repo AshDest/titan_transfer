@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\FeeType;
 use App\Models\TransferFeeRule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -20,5 +21,10 @@ class TransferFeeRuleFactory extends Factory
             'effective_from' => now()->startOfDay(),
             'created_by' => User::factory(),
         ];
+    }
+
+    public function fixed(string $amount = '5.00'): static
+    {
+        return $this->state(fn (): array => ['fee_type' => FeeType::Fixed, 'fixed_amount' => $amount, 'percentage' => '0.0000']);
     }
 }

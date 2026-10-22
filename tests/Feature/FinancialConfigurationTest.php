@@ -43,13 +43,13 @@ class FinancialConfigurationTest extends TestCase
         $old = app(RecordTransferFeeRule::class)->handle($admin, $this->feeInput());
 
         $new = app(RecordTransferFeeRule::class)->handle($admin, [
-            ...$this->feeInput(), 'percentage' => '2.5123', 'minimum_amount' => '501.01',
+            ...$this->feeInput(), 'percentage' => '2.5123', 'minimum_amount' => '1501.01',
             'maximum_amount' => '2000.99',
         ]);
 
         $this->assertSame('3.0000', $old->refresh()->percentage);
         $this->assertSame('2.5123', $new->percentage);
-        $this->assertSame('501.01', $new->minimum_amount);
+        $this->assertSame('1501.01', $new->minimum_amount);
         $this->assertSame('2000.99', $new->maximum_amount);
         $this->assertTrue($new->createdBy->is($admin));
         $this->assertDatabaseCount('transfer_fee_rules', 2);
@@ -182,6 +182,6 @@ class FinancialConfigurationTest extends TestCase
 
     private function feeInput(): array
     {
-        return ['name' => 'Standard', 'source_currency' => 'USD', 'percentage' => '3.0000'];
+        return ['name' => 'Standard', 'source_currency' => 'USD', 'percentage' => '3.0000', 'minimum_amount' => '1000.01'];
     }
 }

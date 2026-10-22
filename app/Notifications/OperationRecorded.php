@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\FeeType;
 use App\Models\Beneficiary;
 use App\Models\Branch;
 use App\Models\CashMovement;
@@ -58,7 +59,9 @@ class OperationRecorded extends Notification
                 'deactivated' => ['Taux de change désactivé', 'Le taux '.$record->from_currency.' → '.$record->to_currency.' a été désactivé.'],
                 default => ['Taux de change enregistré', '1 '.$record->from_currency.' = '.DecimalFormatter::rate($record->rate).' '.$record->to_currency.'. Nouvelle version '.($record->active ? 'active' : 'inactive').'.'],
             },
-            TransferFeeRule::class => ['Règle de frais enregistrée', $record->name.' : '.DecimalFormatter::percentage($record->percentage).' % en '.$record->source_currency.'.'],
+            TransferFeeRule::class => ['Règle de frais enregistrée', $record->name.' : '.($record->fee_type === FeeType::Fixed
+                ? DecimalFormatter::money($record->fixed_amount).' '.$record->source_currency.' (montant fixe).'
+                : DecimalFormatter::percentage($record->percentage).' % en '.$record->source_currency.'.')],
         };
 
         return ['subject_type' => $record->getMorphClass(), 'subject_id' => $record->getKey(),

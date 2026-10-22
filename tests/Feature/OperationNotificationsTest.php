@@ -103,7 +103,7 @@ class OperationNotificationsTest extends TestCase
             'beneficiary' => ['beneficiaries.store', [...$this->person(), 'branch_id' => $this->cashier->branch_id], Beneficiary::class],
             'branch' => ['branches.store', ['name' => 'Nouvelle agence', 'code' => 'KGL', 'country' => 'Rwanda', 'city' => 'Kigali', 'default_currency' => 'USD', 'timezone' => 'Africa/Kigali'], Branch::class],
             'rate' => ['exchange-rates.store', ['from_currency' => 'USD', 'to_currency' => 'AED', 'rate' => '3.680000', 'effective_from' => now()->format('Y-m-d\TH:i'), 'active' => '1'], ExchangeRate::class],
-            'fee' => ['fee-rules.store', ['name' => 'Nouveaux frais', 'source_currency' => 'USD', 'percentage' => '2.5000', 'active' => '1'], TransferFeeRule::class],
+            'fee' => ['fee-rules.store', ['name' => 'Nouveaux frais', 'source_currency' => 'USD', 'percentage' => '2.5000', 'minimum_amount' => '1000.01', 'active' => '1'], TransferFeeRule::class],
         };
         $this->post(route($route), $data)->assertSessionHasNoErrors();
         $notification = $this->admin->notifications()->sole();

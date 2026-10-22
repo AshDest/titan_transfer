@@ -356,3 +356,4 @@ a.treasury-reference:hover{text-decoration:underline}
 @media(max-width:600px){.fee-withdrawal-summary{grid-template-columns:1fr}}
 .fee-revenue-filters .treasury-filter-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))}
 @media(max-width:600px){.fee-revenue-filters .treasury-filter-grid{grid-template-columns:1fr}}
+.fee-mode-hint{margin:0 0 24px}

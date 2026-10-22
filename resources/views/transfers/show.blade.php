@@ -10,7 +10,7 @@
                 <div><span>{{ $label }}</span><strong>{{ $transfer->parties_snapshot[$party]['first_name'] }} {{ $transfer->parties_snapshot[$party]['last_name'] }}</strong><p>{{ $transfer->parties_snapshot[$party]['phone'] }} · {{ $transfer->parties_snapshot[$party]['country'] }}</p></div>
             @endforeach
         </div>
-        <x-transfer-summary :amount="$transfer->amount_received" :percentage="$transfer->fee_percentage" :fee="$transfer->fee_amount" :net="$transfer->net_amount" :rate="$transfer->exchange_rate" :payout="$transfer->payout_amount" :source-currency="$transfer->source_currency" :destination-currency="$transfer->destination_currency" />
+        <x-transfer-summary :fee-type="$transfer->fee_type" :amount="$transfer->amount_received" :percentage="$transfer->fee_percentage" :fee="$transfer->fee_amount" :net="$transfer->net_amount" :rate="$transfer->exchange_rate" :payout="$transfer->payout_amount" :source-currency="$transfer->source_currency" :destination-currency="$transfer->destination_currency" />
         @if($transfer->notes)<p class="form-context">{{ $transfer->notes }}</p>@endif
         @if($transfer->status === \App\Enums\TransferStatus::Pending)<p class="form-context">Encaissement enregistré. Le transfert attend sa validation avant la mise à disposition des fonds.</p>@endif
         @if($transfer->approved_at)<p class="form-context">Approuvé par <strong>{{ $transfer->approvedBy->name }}</strong> le {{ $transfer->approved_at->timezone(auth()->user()->branch?->timezone ?? 'UTC')->format('d/m/Y H:i') }}.</p>@endif

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\TransferQuote;
+use App\Enums\FeeType;
 use App\Models\Branch;
 use App\Models\ExchangeRate;
 use App\Models\TransferFeeRule;
@@ -40,7 +41,7 @@ final class TransferPricing
                 && ($rule->maximum_amount === null || $amountValue->isLessThanOrEqualTo($rule->maximum_amount)));
         $specificity = fn ($rule): int => (int) ($rule->source_branch_id !== null) + (int) ($rule->destination_branch_id !== null);
         $rank = $rules->max($specificity);
-        $matches = $rules->filter(fn ($rule) => $specificity($rule) === $rank);
+        $matches = $rules->filter(fn ($rule) => $specificity($rule) === $rank && $rule->active);
         if ($matches->count() !== 1 || ! $matches->first()->active) {
             throw ValidationException::withMessages(['amount_received' => $matches->count() > 1
                 ? 'Plusieurs règles de frais se chevauchent. Contactez votre administrateur.'
@@ -48,6 +49,6 @@ final class TransferPricing
         }
         $fee = $matches->first();
 
-        return ['quote' => $this->calculator->calculate($amount, $fee->percentage, $rate?->rate ?? '1.000000'), 'rate' => $rate, 'fee' => $fee];
+        return ['quote' => $this->calculator->calculate($amount, $fee->fee_type === FeeType::Fixed ? $fee->fixed_amount : $fee->percentage, $rate?->rate ?? '1.000000', $fee->fee_type), 'rate' => $rate, 'fee' => $fee];
     }
 }

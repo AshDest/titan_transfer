@@ -14,9 +14,13 @@
             @else
                 sans plafond.
             @endif
-            <span title="Pourcentage exact : {{ $fee->percentage }} %">@percentage($fee->percentage) %</span> sur la totalité du montant encaissé.
+            @if($fee->fee_type === \App\Enums\FeeType::Fixed)
+                Frais fixes : @money($fee->fixed_amount) {{ $source->default_currency }}.
+            @else
+                <span title="Pourcentage exact : {{ $fee->percentage }} %">@percentage($fee->percentage) %</span> sur la totalité du montant encaissé.
+            @endif
         </p>
-        <x-transfer-summary :amount="$quote->amountReceived" :percentage="$quote->feePercentage" :fee="$quote->feeAmount" :net="$quote->netAmount" :rate="$quote->exchangeRate" :payout="$quote->payoutAmount" :source-currency="$source->default_currency" :destination-currency="$destination->default_currency" />
+        <x-transfer-summary :fee-type="$quote->feeType" :amount="$quote->amountReceived" :percentage="$quote->feePercentage" :fee="$quote->feeAmount" :net="$quote->netAmount" :rate="$quote->exchangeRate" :payout="$quote->payoutAmount" :source-currency="$source->default_currency" :destination-currency="$destination->default_currency" />
         @if($data['notes'] ?? null)<p class="form-context">{{ $data['notes'] }}</p>@endif
         <form method="POST" action="{{ route('transfers.store') }}" data-confirm-transfer>
             @csrf<input type="hidden" name="review_token" value="{{ $token }}">

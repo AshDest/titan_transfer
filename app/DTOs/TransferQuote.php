@@ -2,6 +2,8 @@
 
 namespace App\DTOs;
 
+use App\Enums\FeeType;
+
 final readonly class TransferQuote
 {
     public function __construct(
@@ -11,6 +13,7 @@ final readonly class TransferQuote
         public string $netAmount,
         public string $exchangeRate,
         public string $payoutAmount,
+        public FeeType $feeType = FeeType::Percentage,
     ) {}
 
     /** @return array<string, string> */
@@ -18,6 +21,7 @@ final readonly class TransferQuote
     {
         return [
             'amount_received' => $this->amountReceived,
+            'fee_type' => $this->feeType->value,
             'fee_percentage' => $this->feePercentage,
             'fee_amount' => $this->feeAmount,
             'net_amount' => $this->netAmount,

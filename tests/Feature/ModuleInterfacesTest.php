@@ -173,13 +173,13 @@ class ModuleInterfacesTest extends TestCase
     {
         $this->actingAs($this->administrator())->post(route('fee-rules.store'), [
             'name' => 'New fee', 'source_currency' => 'USD', 'percentage' => '2.5123',
-            'minimum_amount' => '100.01', 'maximum_amount' => '500.99', 'effective_from' => '2026-10-01T08:30',
+            'minimum_amount' => '1000.01', 'maximum_amount' => '1500.99', 'effective_from' => '2026-10-01T08:30',
             'source_branch_id' => '', 'destination_branch_id' => '', 'active' => '1',
         ])->assertRedirect(route('fee-rules.index'))->assertSessionHasNoErrors();
 
         $rule = TransferFeeRule::sole();
         $this->assertSame('2.5123', $rule->percentage);
-        $this->assertSame('100.01', $rule->minimum_amount);
+        $this->assertSame('1000.01', $rule->minimum_amount);
     }
 
     public function test_cashier_cannot_submit_financial_configuration_or_an_agency(): void

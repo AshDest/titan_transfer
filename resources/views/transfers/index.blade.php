@@ -30,7 +30,9 @@
             <td>{{ $transfer->parties_snapshot['sender']['first_name'] }} {{ $transfer->parties_snapshot['sender']['last_name'] }}</td>
             <td>{{ $transfer->sourceBranch->code }} → {{ $transfer->destinationBranch->code }}</td>
             <td>@money($transfer->amount_received) {{ $transfer->source_currency }}</td>
-            <td>@money($transfer->fee_amount) {{ $transfer->source_currency }}<small>@percentage($transfer->fee_percentage) %</small></td>
+            <td>@money($transfer->fee_amount) {{ $transfer->source_currency }}<small>@if($transfer->fee_type === \App\Enums\FeeType::Fixed)Montant fixe
+                @else
+                    @percentage($transfer->fee_percentage) % @endif</small></td>
             <td>@money($transfer->payout_amount) {{ $transfer->destination_currency }}</td>
             <td><span class="pill">{{ $transfer->status->label() }}</span></td>
             <td><x-action-link :href="route('transfers.show', $transfer)" icon="eye" label="Voir le transfert" /></td>

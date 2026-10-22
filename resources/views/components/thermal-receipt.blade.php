@@ -17,7 +17,9 @@
     </section>
     <dl class="thermal-amounts thermal-section">
         <div><dt>Total encaissé</dt><dd>@money($transfer->amount_received) {{ $transfer->source_currency }}</dd></div>
-        <div><dt>Frais (<span title="Pourcentage exact : {{ $transfer->fee_percentage }} %">@percentage($transfer->fee_percentage)</span> %)</dt><dd>@money($transfer->fee_amount) {{ $transfer->source_currency }}</dd></div>
+        <div><dt>@if($transfer->fee_type === \App\Enums\FeeType::Fixed)Frais fixes
+            @else
+                Frais (<span title="Pourcentage exact : {{ $transfer->fee_percentage }} %">@percentage($transfer->fee_percentage)</span> %)@endif</dt><dd>@money($transfer->fee_amount) {{ $transfer->source_currency }}</dd></div>
         <div><dt>Montant net</dt><dd>@money($transfer->net_amount) {{ $transfer->source_currency }}</dd></div>
         <div class="thermal-rate"><dt>Taux de change</dt><dd>1 {{ $transfer->source_currency }} = <span title="Taux exact : {{ $transfer->exchange_rate }}">@rate($transfer->exchange_rate)</span> {{ $transfer->destination_currency }}</dd></div>
         <div class="thermal-payout"><dt>À retirer</dt><dd>@money($transfer->payout_amount) {{ $transfer->destination_currency }}</dd></div>

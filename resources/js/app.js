@@ -258,3 +258,32 @@ window.addEventListener('pageshow', () => {
         if (button.dataset.originalLabel) button.textContent = button.dataset.originalLabel;
     });
 });
+
+const feeRuleForm = document.querySelector('[data-fee-rule-form]');
+if (feeRuleForm) {
+    const mode = feeRuleForm.querySelector('[name="fee_type"]');
+    const currency = feeRuleForm.querySelector('[name="source_currency"]');
+    const minimum = feeRuleForm.querySelector('[name="minimum_amount"]');
+    const maximum = feeRuleForm.querySelector('[name="maximum_amount"]');
+    const updateFeeFields = (updateBounds = false) => {
+        feeRuleForm.querySelectorAll('[data-fee-value]').forEach(group => {
+            const selected = group.dataset.feeValue === mode.value;
+            group.hidden = !selected;
+            const input = group.querySelector('input');
+            input.disabled = !selected;
+            input.required = selected;
+        });
+        if (updateBounds && currency.value === 'USD') {
+            if (mode.value === 'percentage') {
+                if (!minimum.value || Number(minimum.value) <= 1000) minimum.value = '1000.01';
+                if (maximum.value && Number(maximum.value) <= 1000) maximum.value = '';
+            } else {
+                if (Number(minimum.value) > 1000) minimum.value = '0.00';
+                if (!maximum.value || Number(maximum.value) > 1000) maximum.value = '1000.00';
+            }
+        }
+    };
+    mode.addEventListener('change', () => updateFeeFields(true));
+    currency.addEventListener('change', () => updateFeeFields(true));
+    updateFeeFields();
+}
