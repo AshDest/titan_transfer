@@ -36,7 +36,7 @@ class AuthenticationTest extends TestCase
         $this->get(route('login'));
         $session = session()->getId();
 
-        $this->post(route('login.store'), ['email' => strtoupper($user->email), 'password' => 'password'])
+        $this->post(route('login.store'), ['login' => strtoupper($user->email), 'password' => 'password'])
             ->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticatedAs($user);
@@ -47,7 +47,7 @@ class AuthenticationTest extends TestCase
     {
         $user = $this->administrator();
 
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password', 'remember' => '1'])
+        $this->post(route('login.store'), ['login' => $user->email, 'password' => 'password', 'remember' => '1'])
             ->assertCookie(Auth::guard('web')->getRecallerName());
 
         $this->assertNotNull($user->refresh()->remember_token);
@@ -58,9 +58,9 @@ class AuthenticationTest extends TestCase
     {
         $user = $this->administrator();
 
-        $this->from(route('login'))->post(route('login.store'), ['email' => $user->email, 'password' => 'secret-wrong-password'])
+        $this->from(route('login'))->post(route('login.store'), ['login' => $user->email, 'password' => 'secret-wrong-password'])
             ->assertRedirect(route('login'))
-            ->assertSessionHasErrors(['email' => 'Connexion impossible. Vérifiez vos identifiants ou contactez votre administrateur.'])
+            ->assertSessionHasErrors(['login' => 'Connexion impossible. Vérifiez vos identifiants ou contactez votre administrateur.'])
             ->assertSessionMissing('_old_input.password');
 
         $this->assertGuest();
@@ -69,7 +69,7 @@ class AuthenticationTest extends TestCase
     public function test_missing_credentials_return_french_validation_errors(): void
     {
         $this->post(route('login.store'), [])->assertSessionHasErrors([
-            'email' => 'Saisissez votre adresse e-mail professionnelle.',
+            'login' => 'Saisissez votre adresse e-mail ou votre numéro de téléphone.',
             'password' => 'Saisissez votre mot de passe.',
         ]);
         $this->assertGuest();
@@ -77,8 +77,8 @@ class AuthenticationTest extends TestCase
 
     public function test_unknown_account_uses_the_same_error_as_wrong_password(): void
     {
-        $this->post(route('login.store'), ['email' => 'missing@example.test', 'password' => 'incorrect'])
-            ->assertSessionHasErrors(['email' => 'Connexion impossible. Vérifiez vos identifiants ou contactez votre administrateur.']);
+        $this->post(route('login.store'), ['login' => 'missing@example.test', 'password' => 'incorrect'])
+            ->assertSessionHasErrors(['login' => 'Connexion impossible. Vérifiez vos identifiants ou contactez votre administrateur.']);
 
         $this->assertGuest();
     }
@@ -88,15 +88,15 @@ class AuthenticationTest extends TestCase
         $user = $this->administrator();
         $this->freezeTime();
         for ($i = 0; $i < 5; $i++) {
-            $this->post(route('login.store'), ['email' => $user->email, 'password' => 'incorrect']);
+            $this->post(route('login.store'), ['login' => $user->email, 'password' => 'incorrect']);
         }
 
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
-            ->assertSessionHasErrors(['email' => 'Trop de tentatives. Réessayez dans 60 secondes.']);
+        $this->post(route('login.store'), ['login' => $user->email, 'password' => 'password'])
+            ->assertSessionHasErrors(['login' => 'Trop de tentatives. Réessayez dans 60 secondes.']);
         $this->assertGuest();
 
         $this->travel(61)->seconds();
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
+        $this->post(route('login.store'), ['login' => $user->email, 'password' => 'password'])
             ->assertRedirect(route('dashboard'));
         $this->assertAuthenticatedAs($user);
     }
@@ -104,10 +104,10 @@ class AuthenticationTest extends TestCase
     public function test_successful_login_clears_failed_attempts(): void
     {
         $user = $this->administrator();
-        $key = 'login:'.hash('sha256', $user->email.'|127.0.0.1');
+        $key = 'login:'.hash('sha256', 'user:'.$user->id.'|127.0.0.1');
         RateLimiter::hit($key, 60);
 
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
+        $this->post(route('login.store'), ['login' => $user->email, 'password' => 'password']);
 
         $this->assertSame(0, RateLimiter::attempts($key));
     }
@@ -118,7 +118,7 @@ class AuthenticationTest extends TestCase
         $branch = Branch::factory()->create(['status' => RecordStatus::Inactive]);
         $user = User::factory()->for($branch)->create()->assignRole(Role::SourceCashier->value);
 
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])->assertSessionHasErrors('email');
+        $this->post(route('login.store'), ['login' => $user->email, 'password' => 'password'])->assertSessionHasErrors('login');
 
         $this->assertGuest();
     }
@@ -128,7 +128,7 @@ class AuthenticationTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $user = User::factory()->create();
 
-        $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])->assertSessionHasErrors('email');
+        $this->post(route('login.store'), ['login' => $user->email, 'password' => 'password'])->assertSessionHasErrors('login');
 
         $this->assertGuest();
     }
@@ -206,7 +206,7 @@ class AuthenticationTest extends TestCase
     {
         $this->app->instance('env', 'local');
 
-        $this->post(route('login.store'), ['email' => 'admin@example.test', 'password' => 'incorrect'])->assertStatus(419);
+        $this->post(route('login.store'), ['login' => 'admin@example.test', 'password' => 'incorrect'])->assertStatus(419);
 
         $this->assertGuest();
     }

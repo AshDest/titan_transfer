@@ -120,7 +120,7 @@ class DomainAuthorizationTest extends TestCase
         $customer = Customer::factory()->create();
 
         $this->assertTrue(Gate::forUser($admin)->allows('view', $customer));
-        $this->assertFalse(Gate::forUser($admin)->allows('delete', $customer));
+        $this->assertTrue(Gate::forUser($admin)->allows('delete', $customer));
     }
 
     public function test_unassigned_user_and_guest_have_no_privileged_access(): void

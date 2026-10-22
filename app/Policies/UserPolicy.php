@@ -30,6 +30,11 @@ class UserPolicy
         return false;
     }
 
+    public function updatePhone(User $user, User $record): bool
+    {
+        return $this->create($user);
+    }
+
     public function delete(User $user, User $record): bool
     {
         return false;

@@ -10,12 +10,12 @@
                 <form method="POST" action="{{ route('login.store') }}" class="login-form" data-submit-form>
                     @csrf
                     <div class="field">
-                        <label for="email">Adresse e-mail</label>
-                        <div class="input-wrap @error('email') is-invalid @enderror">
+                        <label for="login">Adresse e-mail ou téléphone</label>
+                        <div class="input-wrap @error('login') is-invalid @enderror">
                             <x-icon name="mail" />
-                            <input id="email" name="email" type="email" value="{{ old('email') }}" placeholder="vous@entreprise.com" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="255" required autofocus @error('email') aria-invalid="true" aria-describedby="email-error" @enderror>
+                            <input id="login" name="login" type="text" value="{{ is_string(old('login', old('email'))) ? old('login', old('email')) : '' }}" placeholder="vous@entreprise.com ou +243…" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="255" required autofocus @error('login') aria-invalid="true" aria-describedby="login-error" @enderror>
                         </div>
-                        @error('email')<p class="field-error" id="email-error" role="alert">{{ $message }}</p>@enderror
+                        @error('login')<p class="field-error" id="login-error" role="alert">{{ $message }}</p>@enderror
                     </div>
                     <div class="field">
                         <label for="password">Mot de passe</label>

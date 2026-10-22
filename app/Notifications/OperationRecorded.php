@@ -40,10 +40,16 @@ class OperationRecorded extends Notification
                 'rejected' => ['Transfert rejeté', $record->reference.' a été rejeté. Consultez le motif dans le détail du transfert.'],
                 default => ['Transfert enregistré', $record->reference.' : '.DecimalFormatter::money($record->amount_received).' '.$record->source_currency.' encaissés. En attente de validation.'],
             },
-            Customer::class => ['Nouveau client', $record->first_name.' '.$record->last_name.' a été enregistré.'],
+            Customer::class => $this->event === 'updated'
+                ? ['Client modifié', 'La fiche de '.$record->first_name.' '.$record->last_name.' a été modifiée.']
+                : ['Nouveau client', $record->first_name.' '.$record->last_name.' a été enregistré.'],
             Beneficiary::class => ['Nouveau bénéficiaire', $record->first_name.' '.$record->last_name.' a été enregistré.'],
-            Branch::class => ['Nouvelle agence', 'L’agence '.$record->name.' ('.$record->code.') a été créée.'],
-            User::class => ['Nouvel utilisateur', 'Le compte de '.$record->name.' a été créé.'],
+            Branch::class => $this->event === 'updated'
+                ? ['Agence modifiée', 'L’agence '.$record->name.' ('.$record->code.') a été modifiée.']
+                : ['Nouvelle agence', 'L’agence '.$record->name.' ('.$record->code.') a été créée.'],
+            User::class => $this->event === 'phone_updated'
+                ? ['Téléphone utilisateur modifié', 'Le téléphone de connexion de '.$record->name.' a été modifié.']
+                : ['Nouvel utilisateur', 'Le compte de '.$record->name.' a été créé.'],
             ExchangeRate::class => ['Taux de change enregistré', '1 '.$record->from_currency.' = '.DecimalFormatter::rate($record->rate).' '.$record->to_currency.'. Nouvelle version '.($record->active ? 'active' : 'inactive').'.'],
             TransferFeeRule::class => ['Règle de frais enregistrée', $record->name.' : '.DecimalFormatter::percentage($record->percentage).' % en '.$record->source_currency.'.'],
         };

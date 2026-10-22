@@ -47,4 +47,9 @@ class Customer extends Model
     {
         return $this->hasMany(Beneficiary::class);
     }
+
+    public function hasDependencies(): bool
+    {
+        return $this->beneficiaries()->exists() || Transfer::where('sender_id', $this->id)->exists();
+    }
 }

@@ -6,6 +6,7 @@ use App\Enums\RecordStatus;
 use App\Enums\Role;
 use App\Models\User;
 use App\Services\OperationNotifications;
+use App\Services\PhoneNumber;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -26,10 +27,14 @@ final class CreateUser
         if (is_string($input['email'] ?? null)) {
             $input['email'] = mb_strtolower(trim($input['email']));
         }
+        if (is_string($input['phone'] ?? null)) {
+            $input['phone'] = PhoneNumber::normalize($input['phone']) ?: null;
+        }
 
         $data = Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
+            'phone' => ['nullable', 'string', 'regex:'.PhoneNumber::PATTERN, Rule::unique('users', 'phone')],
             'role' => ['required', Rule::enum(Role::class), Rule::exists('roles', 'name')->where('guard_name', 'web')],
             'branch_id' => ['required_unless:role,'.Role::Administrator->value, 'nullable', 'integer', Rule::exists('branches', 'id')->where('status', RecordStatus::Active->value)],
             'password' => ['bail', 'required', 'string', 'max:72', Password::min(12)->letters()->numbers(), 'confirmed',
@@ -45,6 +50,8 @@ final class CreateUser
             'max' => 'Ce champ est trop long (maximum :max caractères).',
             'email.email' => 'Saisissez une adresse e-mail valide.',
             'email.unique' => 'Cette adresse e-mail est déjà utilisée.',
+            'phone.regex' => 'Saisissez un numéro international avec indicatif, par exemple +243970000001.',
+            'phone.unique' => 'Ce numéro de téléphone est déjà utilisé.',
             'role.enum' => 'Sélectionnez un rôle valide.',
             'role.exists' => 'Ce rôle n’est pas disponible.',
             'branch_id.required_unless' => 'Une agence est obligatoire pour ce rôle.',
@@ -58,7 +65,7 @@ final class CreateUser
 
         return DB::transaction(function () use ($actor, $data): User {
             $user = new User([
-                'name' => $data['name'], 'email' => $data['email'], 'password' => $data['password'],
+                'name' => $data['name'], 'email' => $data['email'], 'phone' => $data['phone'] ?? null, 'password' => $data['password'],
             ]);
             $user->branch_id = $data['branch_id'] ?? null;
             $user->save();

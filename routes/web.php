@@ -36,12 +36,14 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         Route::post('/transfers/{transfer}/approve', [TransferReviewController::class, 'approve'])->name('transfers.approve');
         Route::post('/transfers/{transfer}/reject', [TransferReviewController::class, 'reject'])->name('transfers.reject');
         Route::resource('transfers', TransferController::class)->only(['index', 'create', 'store', 'show']);
-        Route::resource('customers', CustomerController::class)->only(['index', 'create', 'store']);
+        Route::resource('customers', CustomerController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
         Route::resource('beneficiaries', BeneficiaryController::class)->only(['index', 'create', 'store']);
-        Route::resource('branches', BranchController::class)->only(['index', 'create', 'store']);
+        Route::resource('branches', BranchController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
         Route::resource('exchange-rates', ExchangeRateController::class)->only(['index', 'create', 'store']);
         Route::resource('fee-rules', TransferFeeRuleController::class)->only(['index', 'create', 'store']);
         Route::resource('users', UserController::class)->only(['index', 'create', 'store']);
+        Route::get('/users/{user}/phone', [UserController::class, 'editPhone'])->name('users.phone.edit');
+        Route::patch('/users/{user}/phone', [UserController::class, 'updatePhone'])->name('users.phone.update');
         Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     });
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');

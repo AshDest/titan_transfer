@@ -20,11 +20,12 @@ final class TransferPricing
         $rate = null;
         if ($source->default_currency !== $destination->default_currency) {
             $rate = ExchangeRate::query()->where('from_currency', $source->default_currency)
-                ->where('to_currency', $destination->default_currency)->where('effective_from', '<=', $at)
+                ->where('to_currency', $destination->default_currency)->where('active', true)
+                ->where('effective_from', '<=', $at)
                 ->where(fn ($query) => $query->whereNull('effective_until')->orWhere('effective_until', '>', $at))
                 ->orderByDesc('effective_from')->orderByDesc('id')->first();
-            if (! $rate || ! $rate->active) {
-                throw ValidationException::withMessages(['destination_branch_id' => 'Aucun taux de change actif pour ce corridor. Contactez votre administrateur.']);
+            if (! $rate) {
+                throw ValidationException::withMessages(['destination_branch_id' => 'Aucun taux de change actif et valide actuellement pour '.$source->default_currency.' → '.$destination->default_currency.'. Contactez votre administrateur pour vérifier les devises, l’activation et les dates de validité (UTC).']);
             }
         }
         $amountValue = BigDecimal::of($amount);

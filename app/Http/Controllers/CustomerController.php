@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Customers\DeleteCustomer;
 use App\Actions\Customers\RegisterCustomer;
+use App\Actions\Customers\UpdateCustomer;
 use App\Enums\RecordStatus;
 use App\Models\Branch;
 use App\Models\Customer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -48,5 +51,32 @@ class CustomerController extends Controller
         $action->handle($request->user(), $branch, $request->all());
 
         return redirect()->route('customers.index')->with('status', 'Enregistrement effectué.');
+    }
+
+    public function edit(Customer $customer): View
+    {
+        Gate::authorize('update', $customer);
+
+        return view('customers.edit', compact('customer'));
+    }
+
+    public function update(Request $request, Customer $customer, UpdateCustomer $action): RedirectResponse
+    {
+        $action->handle($request->user(), $customer, $request->all());
+
+        return redirect()->route('customers.index')->with('status', 'Client modifié.');
+    }
+
+    public function destroy(Request $request, Customer $customer, DeleteCustomer $action): RedirectResponse
+    {
+        Gate::authorize('delete', $customer);
+        try {
+            $request->validate(['confirmation' => ['accepted']], ['confirmation.accepted' => 'Confirmez la suppression.']);
+            $action->handle($request->user(), $customer);
+        } catch (ValidationException $exception) {
+            return redirect()->route('customers.edit', $customer)->withErrors($exception->errors());
+        }
+
+        return redirect()->route('customers.index')->with('status', 'Client supprimé.');
     }
 }

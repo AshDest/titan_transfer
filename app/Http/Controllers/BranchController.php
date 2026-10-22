@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Branches\CreateBranch;
+use App\Actions\Branches\DeleteBranch;
+use App\Actions\Branches\UpdateBranch;
 use App\Models\Branch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class BranchController extends Controller
@@ -37,5 +40,32 @@ class BranchController extends Controller
         $action->handle($request->user(), $request->all());
 
         return redirect()->route('branches.index')->with('status', 'Agence créée.');
+    }
+
+    public function edit(Branch $branch): View
+    {
+        Gate::authorize('update', $branch);
+
+        return view('branches.edit', compact('branch'));
+    }
+
+    public function update(Request $request, Branch $branch, UpdateBranch $action): RedirectResponse
+    {
+        $action->handle($request->user(), $branch, $request->all());
+
+        return redirect()->route('branches.index')->with('status', 'Agence modifiée.');
+    }
+
+    public function destroy(Request $request, Branch $branch, DeleteBranch $action): RedirectResponse
+    {
+        Gate::authorize('delete', $branch);
+        try {
+            $request->validate(['confirmation' => ['accepted']], ['confirmation.accepted' => 'Confirmez la suppression.']);
+            $action->handle($request->user(), $branch);
+        } catch (ValidationException $exception) {
+            return redirect()->route('branches.edit', $branch)->withErrors($exception->errors());
+        }
+
+        return redirect()->route('branches.index')->with('status', 'Agence supprimée.');
     }
 }

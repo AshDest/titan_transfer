@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
+use App\Services\PhoneNumber;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email', 'max:255'],
+            'login' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'max:1024'],
             'remember' => ['sometimes', 'boolean'],
         ];
@@ -28,9 +29,9 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required' => 'Saisissez votre adresse e-mail professionnelle.',
-            'email.email' => 'Saisissez une adresse e-mail valide.',
-            'email.max' => 'Votre adresse e-mail est trop longue.',
+            'login.required' => 'Saisissez votre adresse e-mail ou votre numéro de téléphone.',
+            'login.string' => 'Saisissez une adresse e-mail ou un numéro de téléphone valide.',
+            'login.max' => 'Votre identifiant est trop long.',
             'password.required' => 'Saisissez votre mot de passe.',
             'password.max' => 'Votre mot de passe est trop long.',
         ];
@@ -38,32 +39,37 @@ class LoginRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if (is_string($this->input('email'))) {
-            $this->merge(['email' => mb_strtolower(trim($this->input('email')))]);
+        $login = $this->input('login', $this->input('email'));
+        if (is_string($login)) {
+            $login = str_contains($login, '@') ? mb_strtolower(trim($login)) : PhoneNumber::normalize($login);
         }
+        $this->merge(['login' => $login]);
     }
 
     public function authenticate(): void
     {
-        $key = 'login:'.hash('sha256', $this->string('email').'|'.$this->ip());
+        $login = $this->string('login')->toString();
+        $field = str_contains($login, '@') ? 'email' : 'phone';
+        $userId = User::where($field, $login)->value('id');
+        $key = 'login:'.hash('sha256', ($userId === null ? $login : 'user:'.$userId).'|'.$this->ip());
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             event(new Lockout($this));
 
             throw ValidationException::withMessages([
-                'email' => 'Trop de tentatives. Réessayez dans '.RateLimiter::availableIn($key).' secondes.',
+                'login' => 'Trop de tentatives. Réessayez dans '.RateLimiter::availableIn($key).' secondes.',
             ]);
         }
 
         if (! Auth::guard('web')->attemptWhen(
-            $this->only('email', 'password'),
+            [$field => $login, 'password' => $this->input('password')],
             fn (User $user): bool => $user->canAccessApplication(),
             $this->boolean('remember'),
         )) {
             RateLimiter::hit($key, 60);
 
             throw ValidationException::withMessages([
-                'email' => 'Connexion impossible. Vérifiez vos identifiants ou contactez votre administrateur.',
+                'login' => 'Connexion impossible. Vérifiez vos identifiants ou contactez votre administrateur.',
             ]);
         }
 

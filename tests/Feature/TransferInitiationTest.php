@@ -260,10 +260,73 @@ class TransferInitiationTest extends TestCase
         return [['0'], ['-10'], ['1e3'], ['1.001'], ['10000000000000000'], [['100']], ['0.001']];
     }
 
-    public function test_disabled_latest_rate_is_not_replaced_by_an_older_active_rate(): void
+    public function test_disabled_latest_rate_does_not_hide_a_valid_active_rate(): void
     {
-        ExchangeRate::factory()->create(['active' => false]);
-        $this->actingAs($this->cashier)->post(route('transfers.preview'), $this->input())->assertSessionHasErrors('destination_branch_id');
+        $this->freezeTime();
+        $active = ExchangeRate::sole();
+        ExchangeRate::factory()->create(['active' => false, 'effective_from' => now(), 'rate' => '9.000000']);
+
+        $transfer = $this->createOperation();
+
+        $this->assertSame($active->id, $transfer->exchange_rate_id);
+        $this->assertSame('3.670000', $transfer->exchange_rate);
+        $this->assertSame('355.99', $transfer->payout_amount);
+    }
+
+    public function test_multiple_rates_select_the_latest_effective_active_rate_for_the_exact_currency_pair(): void
+    {
+        $this->freezeTime();
+        $selected = ExchangeRate::factory()->create(['effective_from' => now(), 'rate' => '4.000000']);
+        ExchangeRate::factory()->create(['effective_from' => now()->subHour(), 'rate' => '5.000000']);
+        ExchangeRate::factory()->create(['effective_from' => now()->addSecond(), 'rate' => '6.000000']);
+        ExchangeRate::factory()->create(['effective_from' => now()->subHour(), 'effective_until' => now(), 'rate' => '7.000000']);
+        ExchangeRate::factory()->create(['from_currency' => 'AED', 'to_currency' => 'USD', 'effective_from' => now(), 'rate' => '0.250000']);
+        ExchangeRate::factory()->create(['to_currency' => 'CDF', 'effective_from' => now(), 'rate' => '2800.000000']);
+
+        $transfer = $this->createOperation();
+
+        $this->assertSame($selected->id, $transfer->exchange_rate_id);
+        $this->assertSame('4.000000', $transfer->exchange_rate);
+        $this->assertSame('388.00', $transfer->payout_amount);
+    }
+
+    public function test_rates_with_the_same_start_date_use_the_last_active_version(): void
+    {
+        $this->freezeTime();
+        ExchangeRate::factory()->create(['effective_from' => now(), 'rate' => '4.000000']);
+        $selected = ExchangeRate::factory()->create(['effective_from' => now(), 'rate' => '5.000000']);
+        ExchangeRate::factory()->create(['effective_from' => now(), 'rate' => '6.000000', 'active' => false]);
+
+        $transfer = $this->createOperation();
+
+        $this->assertSame($selected->id, $transfer->exchange_rate_id);
+        $this->assertSame('485.00', $transfer->payout_amount);
+    }
+
+    #[DataProvider('unavailableRates')]
+    public function test_no_valid_active_rate_blocks_the_transfer_and_identifies_the_currency_pair(string $scenario): void
+    {
+        $this->freezeTime();
+        $this->destination->update(['default_currency' => 'CDF']);
+        $attributes = match ($scenario) {
+            'disabled' => ['active' => false],
+            'future' => ['effective_from' => now()->addSecond()],
+            'expired' => ['effective_from' => now()->subHour(), 'effective_until' => now()],
+            'reverse' => ['from_currency' => 'CDF', 'to_currency' => 'USD'],
+        };
+        ExchangeRate::factory()->create(['to_currency' => 'CDF', ...$attributes]);
+
+        $this->actingAs($this->cashier)->post(route('transfers.preview'), $this->input())
+            ->assertSessionHasErrors(['destination_branch_id' => 'Aucun taux de change actif et valide actuellement pour USD → CDF. Contactez votre administrateur pour vérifier les devises, l’activation et les dates de validité (UTC).']);
+
+        $this->assertDatabaseCount('transfers', 0);
+        $this->assertDatabaseCount('customers', 0);
+        $this->assertDatabaseCount('cash_movements', 0);
+    }
+
+    public static function unavailableRates(): array
+    {
+        return [['disabled'], ['future'], ['expired'], ['reverse']];
     }
 
     public function test_specific_fee_overrides_global_rule_and_overlapping_ranges_are_refused(): void

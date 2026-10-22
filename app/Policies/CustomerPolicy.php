@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Enums\Permission;
 use App\Enums\RecordStatus;
+use App\Enums\Role;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\User;
@@ -29,11 +30,12 @@ class CustomerPolicy
 
     public function update(User $user, Customer $record): bool
     {
-        return false;
+        return $user->canAccessApplication() && ! $user->isCashier()
+            && $user->hasRole(Role::Administrator->value) && $this->view($user, $record);
     }
 
     public function delete(User $user, Customer $record): bool
     {
-        return false;
+        return $this->update($user, $record);
     }
 }

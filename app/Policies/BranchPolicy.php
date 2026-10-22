@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
+use App\Enums\Role;
 use App\Models\Branch;
 use App\Models\User;
 
@@ -25,11 +26,12 @@ class BranchPolicy
 
     public function update(User $user, Branch $record): bool
     {
-        return false;
+        return $user->canAccessApplication() && $user->hasRole(Role::Administrator->value)
+            && $this->create($user) && $this->view($user, $record);
     }
 
     public function delete(User $user, Branch $record): bool
     {
-        return false;
+        return $this->update($user, $record);
     }
 }
