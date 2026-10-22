@@ -26,6 +26,7 @@ enum Permission: string
     case FeeRulesView = 'fee-rules.view';
     case FeeRulesManage = 'fee-rules.manage';
     case CashView = 'cash.view';
+    case CashWithdraw = 'cash.withdraw';
     case CashAdjust = 'cash.adjust';
     case ReportsView = 'reports.view';
     case AuditView = 'audit.view';
@@ -56,6 +57,7 @@ enum Permission: string
             self::FeeRulesView => 'Consulter les règles de frais',
             self::FeeRulesManage => 'Configurer les règles de frais',
             self::CashView => 'Consulter la trésorerie',
+            self::CashWithdraw => 'Enregistrer les sorties de caisse',
             self::CashAdjust => 'Ajuster les caisses',
             self::ReportsView => 'Consulter les rapports',
             self::AuditView => 'Consulter le journal d’audit',

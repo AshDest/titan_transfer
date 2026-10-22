@@ -25,8 +25,8 @@ class RolesAndPermissionsSeeder extends Seeder
             $registration = [Ability::CustomersView, Ability::CustomersCreate, Ability::BeneficiariesView, Ability::BeneficiariesCreate];
             $roles = [
                 UserRole::Administrator->value => Ability::cases(),
-                UserRole::SourceCashier->value => [...$common, ...$registration, Ability::TransfersCreate, Ability::ExchangeRatesView, Ability::FeeRulesView],
-                UserRole::DestinationCashier->value => [...$common, Ability::TransfersPay],
+                UserRole::SourceCashier->value => [...$common, ...$registration, Ability::TransfersCreate, Ability::ExchangeRatesView, Ability::FeeRulesView, Ability::CashWithdraw],
+                UserRole::DestinationCashier->value => [...$common, Ability::TransfersPay, Ability::CashWithdraw],
                 UserRole::Manager->value => [...$common, ...$registration, Ability::TransfersApprove, Ability::TransfersReject, Ability::TransfersCancel, Ability::ReportsView],
             ];
 

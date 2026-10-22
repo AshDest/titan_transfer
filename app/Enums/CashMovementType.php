@@ -10,4 +10,16 @@ enum CashMovementType: string
     case CashOut = 'CASH_OUT';
     case Adjustment = 'ADJUSTMENT';
     case Reversal = 'REVERSAL';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Deposit => 'Encaissement de transfert',
+            self::Payout => 'Paiement de transfert',
+            self::CashIn => 'Entrée de caisse',
+            self::CashOut => 'Sortie de caisse',
+            self::Adjustment => 'Ajustement',
+            self::Reversal => 'Extourne',
+        };
+    }
 }

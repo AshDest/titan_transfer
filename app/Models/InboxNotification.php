@@ -38,6 +38,8 @@ class InboxNotification extends DatabaseNotification
         return $query->whereHasMorph('subject', $types, function (Builder $subject, string $type) use ($user): void {
             if ($type === Transfer::class) {
                 $subject->visibleTo($user);
+            } elseif ($type === CashMovement::class) {
+                $subject->visibleTo($user);
             } elseif (! $user->can('branches.view-all')) {
                 if ($type === Branch::class) {
                     $subject->whereKey($user->branch_id);
@@ -53,6 +55,7 @@ class InboxNotification extends DatabaseNotification
         $record = $this->subject;
 
         return match ($record::class) {
+            CashMovement::class => route('treasury.index', ['movement_id' => $record->id]),
             Transfer::class => route('transfers.show', $record),
             Customer::class => route('customers.index', ['q' => $record->customer_number]),
             Beneficiary::class => route('beneficiaries.index', ['q' => $record->last_name]),

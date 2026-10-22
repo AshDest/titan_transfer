@@ -12,7 +12,7 @@
                 @can('transfers.view')<x-nav-link route="transfers.index" icon="arrow">Transferts</x-nav-link>@endcan
                 @can('customers.view')<x-nav-link route="customers.index" icon="users">Clients</x-nav-link>@endcan
                 @can('beneficiaries.view')<x-nav-link route="beneficiaries.index" icon="users">Bénéficiaires</x-nav-link>@endcan
-                @can('cash.view')<x-nav-link icon="cash" pending>Trésorerie</x-nav-link>@endcan
+                @can('cash.view')<x-nav-link route="treasury.index" icon="cash">Trésorerie</x-nav-link>@endcan
                 @unless($user->isCashier())
                 @canany(['exchange-rates.view', 'fee-rules.view', 'reports.view'])
                     <div class="sidebar-label">FINANCE</div>

@@ -43,6 +43,12 @@ class User extends Authenticatable
         return $this->can(Permission::BranchesViewAll->value) || $this->branch_id === $branch->id;
     }
 
+    public function canViewAllCashAccounts(): bool
+    {
+        return $this->hasRole(Role::Administrator->value) && ! $this->isCashier()
+            && $this->can(Permission::BranchesViewAll->value);
+    }
+
     public function canAccessApplication(): bool
     {
         return $this->can(Permission::DashboardView->value)

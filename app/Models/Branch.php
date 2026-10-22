@@ -27,6 +27,11 @@ class Branch extends Model
         return $this->hasMany(User::class);
     }
 
+    public function cashAccounts(): HasMany
+    {
+        return $this->hasMany(CashAccount::class);
+    }
+
     public function customers(): HasMany
     {
         return $this->hasMany(Customer::class);

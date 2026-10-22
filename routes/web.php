@@ -11,6 +11,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\TransferFeeRuleController;
 use App\Http\Controllers\TransferReviewController;
+use App\Http\Controllers\TreasuryController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\EnsureApplicationAccess;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +31,9 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         Route::post('/notifications/{notification}/open', [NotificationController::class, 'open'])->whereUuid('notification')->name('notifications.open');
         Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->whereUuid('notification')->name('notifications.read');
         Route::get('/dashboard', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
+        Route::get('/treasury', [TreasuryController::class, 'index'])->name('treasury.index');
+        Route::get('/treasury/cash-outs/create', [TreasuryController::class, 'create'])->name('treasury.cash-outs.create');
+        Route::post('/treasury/cash-outs', [TreasuryController::class, 'store'])->name('treasury.cash-outs.store');
         Route::get('/transfers/people', [TransferController::class, 'people'])->name('transfers.people');
         Route::post('/transfers/preview', [TransferController::class, 'preview'])->name('transfers.preview');
         Route::post('/transfers/revise', [TransferController::class, 'revise'])->name('transfers.revise');

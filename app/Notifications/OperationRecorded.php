@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Beneficiary;
 use App\Models\Branch;
+use App\Models\CashMovement;
 use App\Models\Customer;
 use App\Models\ExchangeRate;
 use App\Models\Transfer;
@@ -20,6 +21,7 @@ class OperationRecorded extends Notification
         Beneficiary::class => 'beneficiaries.view', Branch::class => 'branches.view',
         ExchangeRate::class => 'exchange-rates.view', TransferFeeRule::class => 'fee-rules.view',
         User::class => 'users.manage',
+        CashMovement::class => 'cash.view',
     ];
 
     public function __construct(public Model $subject, public User $actor, public string $event = 'created') {}
@@ -35,6 +37,7 @@ class OperationRecorded extends Notification
     {
         $record = $this->subject;
         [$title, $message] = match ($record::class) {
+            CashMovement::class => ['Sortie de caisse enregistrée', DecimalFormatter::money($record->amount).' '.$record->currency.' remis à '.$record->recipient_name.' · '.$record->account->branch->name.'.'],
             Transfer::class => match ($this->event) {
                 'approved' => ['Transfert approuvé', $record->reference.' a été validé et transmis à l’agence de retrait.'],
                 'rejected' => ['Transfert rejeté', $record->reference.' a été rejeté. Consultez le motif dans le détail du transfert.'],
