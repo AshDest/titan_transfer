@@ -57,6 +57,7 @@ class InboxNotification extends DatabaseNotification
             Customer::class => route('customers.index', ['q' => $record->customer_number]),
             Beneficiary::class => route('beneficiaries.index', ['q' => $record->last_name]),
             Branch::class => route('branches.index', ['q' => $record->code]),
+            User::class => route('users.index', ['q' => $record->email]),
             ExchangeRate::class => route('exchange-rates.index', ['q' => $record->from_currency]),
             TransferFeeRule::class => route('fee-rules.index', ['q' => $record->name]),
         };

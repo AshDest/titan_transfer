@@ -19,6 +19,7 @@ class OperationRecorded extends Notification
         Transfer::class => 'transfers.view', Customer::class => 'customers.view',
         Beneficiary::class => 'beneficiaries.view', Branch::class => 'branches.view',
         ExchangeRate::class => 'exchange-rates.view', TransferFeeRule::class => 'fee-rules.view',
+        User::class => 'users.manage',
     ];
 
     public function __construct(public Model $subject, public User $actor, public string $event = 'created') {}
@@ -42,6 +43,7 @@ class OperationRecorded extends Notification
             Customer::class => ['Nouveau client', $record->first_name.' '.$record->last_name.' a été enregistré.'],
             Beneficiary::class => ['Nouveau bénéficiaire', $record->first_name.' '.$record->last_name.' a été enregistré.'],
             Branch::class => ['Nouvelle agence', 'L’agence '.$record->name.' ('.$record->code.') a été créée.'],
+            User::class => ['Nouvel utilisateur', 'Le compte de '.$record->name.' a été créé.'],
             ExchangeRate::class => ['Taux de change enregistré', '1 '.$record->from_currency.' = '.DecimalFormatter::rate($record->rate).' '.$record->to_currency.'. Nouvelle version '.($record->active ? 'active' : 'inactive').'.'],
             TransferFeeRule::class => ['Règle de frais enregistrée', $record->name.' : '.DecimalFormatter::percentage($record->percentage).' % en '.$record->source_currency.'.'],
         };

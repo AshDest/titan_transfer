@@ -41,7 +41,7 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         Route::resource('branches', BranchController::class)->only(['index', 'create', 'store']);
         Route::resource('exchange-rates', ExchangeRateController::class)->only(['index', 'create', 'store']);
         Route::resource('fee-rules', TransferFeeRuleController::class)->only(['index', 'create', 'store']);
-        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::resource('users', UserController::class)->only(['index', 'create', 'store']);
         Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     });
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');

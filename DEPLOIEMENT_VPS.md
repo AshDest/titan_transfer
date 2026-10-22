@@ -569,6 +569,97 @@ Si des fichiers de code ont été modifiés directement sur le serveur, résolve
 
 Revérifiez ensuite la connexion HTTPS et les écrans concernés. `.env` et les données restent sur le VPS. N’utilisez jamais `migrate:fresh`, `db:wipe` ou `git clean -fdx` en production. Si une migration échoue, ne restaurez pas seulement le code : vérifiez aussi la compatibilité de la base et la sauvegarde avant toute restauration.
 
+## 12. Déployer automatiquement à chaque push sur main
+
+Le workflow `.github/workflows/deploy.yml` exécute les tests sous **PHP 8.5**, compile l’interface avec **Node 24**, puis déploie le commit testé par SSH. Il se déclenche sur les push de `main` et peut aussi être lancé depuis **Actions → Titan - Tests et déploiement VPS → Run workflow** (branche `main`).
+
+### Préparer une première fois le serveur
+
+Terminez les étapes 1 à 9 : le clone `/var/www/titan`, `.env`, la base `/var/lib/titan/database.sqlite`, le compte administrateur et HTTPS doivent déjà fonctionner. Le workflow ne réalise pas cette première installation.
+
+Le script cible l’installation Debian standard décrite ici : root pour le déploiement, `www-data` pour Laravel, `php8.5`, service `php8.5-fpm` et Node 24. Si un panneau gère votre site avec un autre chemin, utilisateur ou service, adaptez `.github/scripts/deploy-vps.sh` avant l’activation. Composer, Git, curl, SQLite et `flock` doivent être disponibles dans le PATH root. Le VPS doit pouvoir lire le dépôt GitHub sans demande de mot de passe ; pour un dépôt privé, utilisez la clé de l’étape 4.
+
+### Autoriser GitHub Actions à se connecter au VPS
+
+Cette clé est distincte de celle qui permet au VPS de lire un dépôt privé :
+
+- **VPS → GitHub** : clé de lecture `titan_github`, configurée à l’étape 4.
+- **GitHub Actions → VPS** : clé `titan_actions`, créée ci-dessous.
+
+**Sur votre ordinateur :**
+
+```bash
+ssh-keygen -t ed25519 -C "titan-github-actions" -f ~/.ssh/titan_actions -N ''
+cat ~/.ssh/titan_actions.pub
+```
+
+Si ce nom de clé existe déjà, réutilisez-la ou choisissez un autre nom. Ajoutez uniquement sa partie **publique** dans `/root/.ssh/authorized_keys` du VPS, sans remplacer les clés existantes. Si votre connexion root fonctionne depuis votre ordinateur :
+
+```bash
+cat ~/.ssh/titan_actions.pub | ssh root@102.223.209.43 \
+  'umask 077; mkdir -p /root/.ssh; cat >> /root/.ssh/authorized_keys; chmod 700 /root/.ssh; chmod 600 /root/.ssh/authorized_keys'
+```
+
+Sinon, ajoutez cette ligne publique depuis la console de l’hébergeur. La clé privée reste hors du dépôt Git. Cette clé donne à GitHub Actions un accès root pour exécuter le déploiement : limitez les personnes autorisées à modifier `main` et les workflows.
+
+Récupérez ensuite l’identité SSH du serveur **dans une session VPS de confiance** :
+
+```bash
+awk '{print "102.223.209.43", $1, $2}' /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+Conservez la ligne complète. Ce n’est ni une empreinte seule, ni une clé privée ; elle permettra au workflow de vérifier le serveur avant de se connecter. Pour un port différent de 22, remplacez le premier champ par `[102.223.209.43]:PORT`.
+
+### Ajouter les secrets et variables sur GitHub
+
+Ouvrez **AshDest/titan_transfer → Settings → Secrets and variables → Actions**.
+
+Dans l’onglet **Secrets**, créez ces *Repository secrets* :
+
+| Nom | Valeur |
+| --- | --- |
+| `VPS_SSH_KEY` | Contenu complet du fichier privé `~/.ssh/titan_actions`, y compris les lignes BEGIN et END. |
+| `VPS_KNOWN_HOSTS` | Ligne d’identité du VPS obtenue par la commande `awk` ci-dessus. |
+
+Ouvrez le fichier privé localement pour le copier dans le champ de secret GitHub ; ne le collez pas dans le chat ni dans un fichier versionné.
+
+Dans l’onglet **Variables**, créez :
+
+| Nom | Valeur |
+| --- | --- |
+| `VPS_DEPLOY_ENABLED` | `true` lorsque la première installation et les secrets sont prêts. |
+| `VPS_PORT` | Facultatif ; `22` par défaut. |
+
+Tant que `VPS_DEPLOY_ENABLED` n’est pas égal à `true`, seuls les tests et la compilation tournent. Le job de déploiement apparaît comme ignoré. Cela permet de publier le workflow avant que le serveur soit prêt.
+
+### Publier puis déclencher
+
+**Sur votre ordinateur :**
+
+```bash
+cd /home/ash/Documents/laravel/titan-send
+git add .github/workflows/deploy.yml .github/scripts/deploy-vps.sh DEPLOIEMENT_VPS.md
+git commit -m "Ajoute le deploiement automatique du VPS Titan"
+git push origin main
+```
+
+Vérifiez le résultat dans l’onglet **Actions**. Une fois la variable activée, les prochains push sur `main` déploieront automatiquement après réussite des tests. Si le workflow était déjà publié avant l’activation, lancez **Run workflow** sur `main`.
+
+### Ce que fait le déploiement
+
+1. Vérifie les outils, la configuration de production, l’état du clone et l’absence de maintenance déjà active.
+2. Récupère `main` et vérifie le SHA du commit qui a passé les tests. Si un push plus récent existe, il laisse son workflow prendre le relais.
+3. Passe le site en maintenance et sauvegarde la base SQLite, `.env`, `storage/app` et le SHA précédent dans `/root/backups/titan/`.
+4. Avance le clone vers ce commit avec `git merge --ff-only`, installe les dépendances verrouillées et compile l’interface sur le VPS.
+5. Applique les migrations, reconstruit les caches, recharge PHP-FPM et remet le site en service.
+6. Vérifie que `/up` et `/login` répondent `200` en HTTPS directement sur le VPS, avec validation du certificat.
+
+Une seule exécution de ce workflow peut avancer à la fois et un verrou serveur protège les déploiements automatiques concurrents. N’exécutez pas simultanément la procédure manuelle de l’étape 11. Plusieurs push très rapprochés peuvent être regroupés par GitHub : les commits intermédiaires ne sont pas nécessairement tous déployés.
+
+Les contrôles préalables échouent sans passer le site en maintenance. En cas d’erreur après le début de la mise à jour, le script conserve ou réactive la maintenance et indique le chemin de sauvegarde. Il ne restaure pas automatiquement la base : une restauration doit tenir compte des migrations et des opérations déjà enregistrées. Les sauvegardes restent sur le VPS ; surveillez l’espace disque et copiez-les hors serveur.
+
+Le workflow est préparé dans le dépôt local. Il ne sera actif qu’après publication sur GitHub, configuration des secrets et activation de la variable.
+
 ## Dépannage
 
 | Symptôme | Vérification |

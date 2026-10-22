@@ -1,0 +1,80 @@
+name: Titan - Tests et déploiement VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: titan-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, xml, curl, zip, pdo_sqlite, sqlite3, bcmath, intl
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Installer et compiler
+        run: |
+          cp .env.example .env
+          composer install --prefer-dist --no-interaction
+          php artisan key:generate --no-interaction
+          npm ci --include=dev
+          npm run build
+          bash -n .github/scripts/deploy-vps.sh
+
+      - name: Tester
+        run: php artisan test --compact
+
+  deploy:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && vars.VPS_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Déployer le commit testé
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${VPS_SSH_KEY:?Ajoutez le secret VPS_SSH_KEY}"
+          : "${VPS_KNOWN_HOSTS:?Ajoutez le secret VPS_KNOWN_HOSTS}"
+          [[ "$VPS_PORT" =~ ^[0-9]+$ ]]
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          ssh_directory=$(mktemp -d)
+          trap 'rm -rf "$ssh_directory"' EXIT
+          chmod 700 "$ssh_directory"
+          printf '%s\n' "$VPS_SSH_KEY" > "$ssh_directory/key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$ssh_directory/known_hosts"
+          chmod 600 "$ssh_directory/key" "$ssh_directory/known_hosts"
+          ssh -i "$ssh_directory/key" -p "$VPS_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_directory/known_hosts" \
+            -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+            root@102.223.209.43 "bash -s -- $GITHUB_SHA" < .github/scripts/deploy-vps.sh
