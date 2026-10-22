@@ -1,5 +1,5 @@
 <x-layouts.workspace title="Taux de change">
-    <x-page-heading title="Taux de change" description="Activer un taux désactive les autres de la même paire de devises." :create="auth()->user()->can('create', \App\Models\ExchangeRate::class) ? 'exchange-rates.create' : null" button="Nouveau taux" />
+    <x-page-heading title="Taux de change" :create="auth()->user()->can('create', \App\Models\ExchangeRate::class) ? 'exchange-rates.create' : null" button="Nouveau taux" />
     @error('activation')<p class="notice field-error" role="alert">{{ $message }}</p>@enderror
     <x-listing :records="$records" :headings="['Conversion', 'Taux', 'Début (UTC)', 'Fin (UTC)', 'Configuration', 'Auteur', 'Actions']" :searchable="false">
         @foreach($records as $record)

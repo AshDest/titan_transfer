@@ -1,8 +1,7 @@
 <x-layouts.workspace title="Trésorerie">
-    <x-page-heading title="Trésorerie" description="Soldes actuels et historique des mouvements de caisse." :create="auth()->user()->can('createWithdrawal', \App\Models\CashAccount::class) ? 'treasury.cash-outs.create' : null" button="Sortie de caisse" />
+    <x-page-heading title="Trésorerie" :create="auth()->user()->can('createWithdrawal', \App\Models\CashAccount::class) ? 'treasury.cash-outs.create' : null" button="Sortie de caisse" />
     <section class="branch-section">
         <h2>Soldes actuels par agence et devise</h2>
-        <p class="field-hint">Les filtres de dates concernent l’historique. Les soldes affichés sont ceux des caisses maintenant.</p>
         <div class="table-scroll"><table>
             <thead><tr><th>Agence</th><th>Caisse</th><th>Devise</th><th>Solde disponible</th><th>Statut</th></tr></thead>
             <tbody>
@@ -34,7 +33,7 @@
         </div>
         <div class="form-actions"><a class="secondary-button" href="{{ route('treasury.index') }}">Réinitialiser</a><button class="primary-button compact-button">Filtrer</button></div>
     </form>
-    <p class="field-hint">La date d’opération correspond au jour déclaré dans l’agence. Le solde après saisie suit l’ordre d’enregistrement, même en cas de saisie d’une date passée. Heures de saisie : {{ $timezone }}.</p>
+    <p class="field-hint">Heures de saisie : {{ $timezone }}.</p>
     <x-listing :records="$records" :headings="['N°', 'Date d’opération', 'Agence', 'Type', 'Montant', 'Bénéficiaire', 'Motif / Référence', 'Solde avant saisie', 'Solde après saisie', 'Enregistré par', 'Date de saisie']" :searchable="false">
         @foreach($records as $record)
             <tr>

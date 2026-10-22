@@ -1,5 +1,5 @@
 <x-layouts.workspace title="Nouvelle opération">
-    <x-page-heading title="Nouvelle opération" description="Préparez le transfert et ajoutez votre client directement ici." />
+    <x-page-heading title="Nouvelle opération" />
     @if($errors->any())<div class="notice page-notice" role="alert"><div><strong>Vérifiez les informations suivantes :</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div></div>@endif
     <form method="POST" action="{{ route('transfers.preview') }}" class="editor-form transfer-form" data-transfer-form data-people-url="{{ route('transfers.people') }}">
         @csrf
@@ -57,12 +57,11 @@
         <section class="transfer-section">
             <h2><span>4</span> Montant de l’opération</h2>
             <div class="form-grid">
-                <x-field name="amount_received" label="Montant total à encaisser" required inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" placeholder="Ex. 100.00" hint="Frais inclus. Le pourcentage dépend de la tranche du montant encaissé et du trajet. La tranche, les frais et la somme à retirer seront affichés à l’étape suivante." />
+                <x-field name="amount_received" label="Montant total à encaisser" required inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" placeholder="Ex. 100.00" hint="Frais inclus." />
                 <div class="transfer-currency"><span>Devise d’encaissement</span><strong data-source-currency>—</strong></div>
             </div>
             <x-field name="notes" label="Note (facultatif)" maxlength="1000" />
         </section>
-        <p class="field-hint">Le client et le bénéficiaire seront enregistrés lors de la confirmation de l’opération.</p>
         <div class="form-actions"><a class="secondary-button" href="{{ route('transfers.index') }}">Annuler</a><button class="primary-button compact-button">Vérifier l’opération <x-icon name="arrow" /></button></div>
     </form>
 </x-layouts.workspace>

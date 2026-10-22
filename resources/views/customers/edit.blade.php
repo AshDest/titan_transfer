@@ -21,6 +21,6 @@
         <div class="form-actions"><a class="secondary-button" href="{{ route('customers.index') }}">Annuler</a><button class="primary-button compact-button">Enregistrer les modifications</button></div>
     </form>
     @can('delete', $customer)
-        <x-delete-record :action="route('customers.destroy', $customer)" label="le client" hint="Seul un client sans bénéficiaires ni transferts peut être supprimé. Sinon, choisissez le statut Inactif pour conserver son historique." />
+        <x-delete-record :action="route('customers.destroy', $customer)" label="le client" hint="Client sans bénéficiaires ni transferts uniquement. Sinon, désactivez-le." />
     @endcan
 </x-layouts.workspace>

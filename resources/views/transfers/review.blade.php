@@ -1,5 +1,5 @@
 <x-layouts.workspace title="Vérifier l’opération">
-    <x-page-heading title="Vérifier l’opération" description="Vérifiez les coordonnées et les montants avant l’encaissement." />
+    <x-page-heading title="Vérifier l’opération" />
     <section class="editor-form transfer-review">
         <div class="transfer-route"><strong>{{ $source->name }}</strong><x-icon name="arrow" /><strong>{{ $destination->name }}</strong></div>
         <div class="form-grid party-summary">
@@ -21,7 +21,7 @@
         <form method="POST" action="{{ route('transfers.store') }}" data-confirm-transfer>
             @csrf<input type="hidden" name="review_token" value="{{ $token }}">
             <label class="cash-confirmation"><input type="checkbox" name="cash_received" value="1" required> J’ai reçu @money($quote->amountReceived) {{ $source->default_currency }} du client.</label>
-            <p class="field-hint">La confirmation enregistre l’encaissement et place le transfert en attente de validation. Tarifs à revérifier après 10 minutes.</p>
+            <p class="field-hint">Récapitulatif valable 10 minutes.</p>
             <div class="form-actions"><button type="submit" class="secondary-button" formaction="{{ route('transfers.revise') }}" formnovalidate>Modifier</button><button type="submit" class="primary-button compact-button" data-confirm-button>Confirmer l’opération</button></div>
         </form>
     </section>

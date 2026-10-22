@@ -129,7 +129,7 @@ class ExchangeRateManagementTest extends TestCase
         $rate = ExchangeRate::factory()->create();
         $original = $rate->only(['rate', 'effective_from', 'created_by']);
         $admin = $this->administrator();
-        $this->actingAs($admin)->get(route('exchange-rates.edit', $rate))->assertOk()->assertSee('Une nouvelle version sera créée');
+        $this->actingAs($admin)->get(route('exchange-rates.edit', $rate))->assertOk()->assertSee('Enregistrer la nouvelle version');
         $this->put(route('exchange-rates.update', $rate), $this->input(['from_currency' => 'EUR', 'to_currency' => 'CDF', 'created_by' => 9999]))
             ->assertRedirect(route('exchange-rates.index'))->assertSessionHasNoErrors();
         $this->assertFalse($rate->refresh()->active);
