@@ -1,6 +1,11 @@
 @props(['name'])
 <svg {{ $attributes->class(['icon']) }} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     @switch($name)
+        @case('power')<path d="M12 2v10M5.6 5.6a9 9 0 1 0 12.8 0"/>@break
+        @case('pause')<path d="M8 5v14M16 5v14"/>@break
+        @case('edit')<path d="m16 3 5 5M4 20l5-1L21 7a2 2 0 0 0-5-5L4 14l-1 7 7-1"/>@break
+        @case('trash')<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>@break
+        @case('user-plus')<circle cx="9" cy="7" r="4"/><path d="M2 21v-2a7 7 0 0 1 14 0v2M19 8v6M16 11h6"/>@break
         @case('bell')<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>@break
         @case('menu')<path d="M4 6h16M4 12h16M4 18h16"/>@break
         @case('plus')<path d="M12 4v16M4 12h16"/>@break

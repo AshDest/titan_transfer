@@ -50,7 +50,11 @@ class OperationRecorded extends Notification
             User::class => $this->event === 'phone_updated'
                 ? ['Téléphone utilisateur modifié', 'Le téléphone de connexion de '.$record->name.' a été modifié.']
                 : ['Nouvel utilisateur', 'Le compte de '.$record->name.' a été créé.'],
-            ExchangeRate::class => ['Taux de change enregistré', '1 '.$record->from_currency.' = '.DecimalFormatter::rate($record->rate).' '.$record->to_currency.'. Nouvelle version '.($record->active ? 'active' : 'inactive').'.'],
+            ExchangeRate::class => match ($this->event) {
+                'activated' => ['Taux de change activé', '1 '.$record->from_currency.' = '.DecimalFormatter::rate($record->rate).' '.$record->to_currency.'. Les autres taux de cette paire ont été désactivés.'],
+                'deactivated' => ['Taux de change désactivé', 'Le taux '.$record->from_currency.' → '.$record->to_currency.' a été désactivé.'],
+                default => ['Taux de change enregistré', '1 '.$record->from_currency.' = '.DecimalFormatter::rate($record->rate).' '.$record->to_currency.'. Nouvelle version '.($record->active ? 'active' : 'inactive').'.'],
+            },
             TransferFeeRule::class => ['Règle de frais enregistrée', $record->name.' : '.DecimalFormatter::percentage($record->percentage).' % en '.$record->source_currency.'.'],
         };
 

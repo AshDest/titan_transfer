@@ -46,6 +46,12 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 .checkbox-label input{width:14px;height:14px;accent-color:var(--brand-navy);margin:0}
 .text-button{border:0;background:none;padding:5px 0;font-size:11px;font-weight:600;color:var(--brand-green-dark);text-decoration:underline;text-underline-offset:4px;text-decoration-color:#93cf9f}
 .text-button:hover{color:var(--brand-navy)}
+.row-actions{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.action-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;border:1px solid #dce6df;border-radius:10px;background:#fff;color:var(--brand-green-dark);text-decoration:none;vertical-align:middle}
+.action-icon:hover{background:#edf8ef;border-color:var(--brand-green-dark)}
+.action-icon:focus-visible{outline:2px solid var(--brand-navy);outline-offset:3px}
+.action-icon-danger{color:#b42318;border-color:#f3d4d1}
+.action-icon-danger:hover{background:#fff1f0;border-color:#b42318}
 .primary-button{border:0;background:var(--brand-green);color:var(--brand-navy);width:100%;display:flex;align-items:center;justify-content:space-between;padding:0 19px;height:51px;border-radius:7px;font-size:12px;font-weight:500;transition:background .2s,transform .2s}
 .primary-button:hover{background:var(--brand-green-hover)}
 .primary-button:active{transform:translateY(1px)}

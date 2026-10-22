@@ -39,7 +39,9 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         Route::resource('customers', CustomerController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
         Route::resource('beneficiaries', BeneficiaryController::class)->only(['index', 'create', 'store']);
         Route::resource('branches', BranchController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
-        Route::resource('exchange-rates', ExchangeRateController::class)->only(['index', 'create', 'store']);
+        Route::resource('exchange-rates', ExchangeRateController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+        Route::post('/exchange-rates/{exchange_rate}/activate', [ExchangeRateController::class, 'activate'])->name('exchange-rates.activate');
+        Route::post('/exchange-rates/{exchange_rate}/deactivate', [ExchangeRateController::class, 'deactivate'])->name('exchange-rates.deactivate');
         Route::resource('fee-rules', TransferFeeRuleController::class)->only(['index', 'create', 'store']);
         Route::resource('users', UserController::class)->only(['index', 'create', 'store']);
         Route::get('/users/{user}/phone', [UserController::class, 'editPhone'])->name('users.phone.edit');

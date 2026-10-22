@@ -33,7 +33,7 @@
             <td>@money($transfer->fee_amount) {{ $transfer->source_currency }}<small>@percentage($transfer->fee_percentage) %</small></td>
             <td>@money($transfer->payout_amount) {{ $transfer->destination_currency }}</td>
             <td><span class="pill">{{ $transfer->status->label() }}</span></td>
-            <td><a class="text-button" href="{{ route('transfers.show', $transfer) }}">Voir le transfert</a></td>
+            <td><x-action-link :href="route('transfers.show', $transfer)" icon="eye" label="Voir le transfert" /></td>
         </tr>@endforeach
     </x-listing>
 </x-layouts.workspace>

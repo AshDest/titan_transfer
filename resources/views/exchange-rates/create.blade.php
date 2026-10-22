@@ -2,11 +2,12 @@
     <x-page-heading title="Nouveau taux de change" description="Les versions précédentes sont conservées dans l’historique." />
     <form method="POST" action="{{ route('exchange-rates.store') }}" class="editor-form">
         @csrf
+        @error('activation')<p class="field-error" role="alert">{{ $message }}</p>@enderror
         <div class="form-grid">
             <x-field name="from_currency" label="Devise d’origine" required maxlength="3" pattern="[A-Z]{3}" placeholder="USD" />
             <x-field name="to_currency" label="Devise de destination" required maxlength="3" pattern="[A-Z]{3}" placeholder="AED" />
             <x-field name="rate" label="Taux pour une unité de la devise d’origine" required inputmode="decimal" placeholder="3.670000" hint="Jusqu’à 6 décimales, séparées par un point." />
-            <x-field name="active" label="Configuration" hint="Le taux activé avec la date de début la plus récente est utilisé, pendant sa période de validité. Un taux désactivé est ignoré.">
+            <x-field name="active" label="Configuration" hint="Activer ce taux désactive les autres de la même paire de devises. Pour un taux futur, choisissez Désactivée puis activez-le à sa date de début.">
                 <option value="1" @selected(old('active', '1') == '1')>Activée</option><option value="0" @selected(old('active', '1') == '0')>Désactivée</option>
             </x-field>
             <x-field name="effective_from" label="Date de début (UTC)" type="datetime-local" required :value="now('UTC')->format('Y-m-d\TH:i')" />

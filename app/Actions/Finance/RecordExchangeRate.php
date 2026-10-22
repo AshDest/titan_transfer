@@ -4,6 +4,7 @@ namespace App\Actions\Finance;
 
 use App\Models\ExchangeRate;
 use App\Models\User;
+use App\Services\ExchangeRateLock;
 use App\Services\OperationNotifications;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -26,11 +27,16 @@ final class RecordExchangeRate
         ])->validate();
 
         return DB::transaction(function () use ($actor, $data): ExchangeRate {
-            $rate = new ExchangeRate($data);
+            app(ExchangeRateLock::class)->acquire($data['from_currency'], $data['to_currency']);
+            $activate = (bool) ($data['active'] ?? true);
+            $rate = new ExchangeRate([...$data, 'active' => false]);
             $rate->createdBy()->associate($actor);
             $rate->save();
 
             $rate->refresh();
+            if ($activate) {
+                $rate = app(SetExchangeRateStatus::class)->handle($actor, $rate, true, false);
+            }
             app(OperationNotifications::class)->record($rate, $actor);
 
             return $rate;
