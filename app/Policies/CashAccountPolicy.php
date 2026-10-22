@@ -26,6 +26,24 @@ class CashAccountPolicy
             && ($user->hasRole(Role::Administrator->value) || $user->isCashier());
     }
 
+    public function viewFeeRevenue(User $user): bool
+    {
+        return $user->canAccessApplication() && ! $user->isCashier()
+            && $user->hasAnyRole([Role::Administrator->value, Role::Manager->value])
+            && $user->can(Permission::ReportsView->value);
+    }
+
+    public function withdrawFeeRevenue(User $user): bool
+    {
+        return $this->viewFeeRevenue($user) && $user->hasRole(Role::Administrator->value)
+            && $this->createWithdrawal($user);
+    }
+
+    public function withdrawFees(User $user, CashAccount $account): bool
+    {
+        return $this->withdrawFeeRevenue($user) && $this->withdraw($user, $account);
+    }
+
     public function withdraw(User $user, CashAccount $account): bool
     {
         return $this->createWithdrawal($user) && $this->view($user, $account)

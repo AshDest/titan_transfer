@@ -18,7 +18,7 @@
                     <div class="sidebar-label">FINANCE</div>
                     @can('exchange-rates.view')<x-nav-link route="exchange-rates.index" icon="exchange">Taux de change</x-nav-link>@endcan
                     @can('fee-rules.view')<x-nav-link route="fee-rules.index" icon="percent">Frais de transfert</x-nav-link>@endcan
-                    @can('reports.view')<x-nav-link icon="report" pending>Rapports</x-nav-link>@endcan
+                    @can('viewFeeRevenue', \App\Models\CashAccount::class)<x-nav-link route="fee-revenue.index" icon="report">Revenus des opérations</x-nav-link>@endcan
                 @endcanany
                 @canany(['branches.view', 'users.manage', 'roles.manage', 'audit.view', 'settings.manage'])
                     <div class="sidebar-label">ADMINISTRATION</div>

@@ -25,14 +25,14 @@ final class RecordTransferFeeRule
             'name' => ['required', 'string', 'max:255'],
             'source_branch_id' => ['nullable', 'integer', Rule::exists(Branch::class, 'id')->where('status', RecordStatus::Active->value)],
             'destination_branch_id' => ['nullable', 'integer', 'different:source_branch_id', Rule::exists(Branch::class, 'id')->where('status', RecordStatus::Active->value)],
-            'source_currency' => ['required', 'string', 'regex:/^[A-Z]{3}$/'],
+            'source_currency' => ['required', 'string', 'regex:/^[A-Z]{3}$/', 'not_in:EAD'],
             'percentage' => ['required', 'string', 'regex:/^(0|[1-9][0-9]{0,2})(\.[0-9]{1,4})?$/', 'numeric', 'between:0,100'],
             'minimum_amount' => ['nullable', 'string', 'regex:/^(0|[1-9][0-9]{0,15})(\.[0-9]{1,2})?$/'],
             'maximum_amount' => ['nullable', 'string', 'regex:/^(0|[1-9][0-9]{0,15})(\.[0-9]{1,2})?$/'],
             'active' => ['sometimes', 'boolean'],
             'effective_from' => ['nullable', 'date_format:Y-m-d H:i:s', 'required_with:effective_until'],
             'effective_until' => ['nullable', 'date_format:Y-m-d H:i:s', 'after:effective_from'],
-        ])->validate();
+        ], ['source_currency.not_in' => 'Le code du dirham des Émirats est AED, et non EAD.'])->validate();
 
         if (isset($data['minimum_amount'], $data['maximum_amount'])
             && BigDecimal::of($data['maximum_amount'])->isLessThan($data['minimum_amount'])) {

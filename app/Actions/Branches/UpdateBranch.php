@@ -23,10 +23,10 @@ final class UpdateBranch
             'code' => ['required', 'string', 'regex:/^[A-Z0-9]{2,12}$/', Rule::unique('branches', 'code')->ignore($branch)],
             'country' => ['required', 'string', 'max:100'],
             'city' => ['required', 'string', 'max:100'],
-            'default_currency' => ['required', 'string', 'regex:/^[A-Z]{3}$/'],
+            'default_currency' => ['required', 'string', 'regex:/^[A-Z]{3}$/', 'not_in:EAD'],
             'timezone' => ['required', 'timezone:all', 'max:64'],
             'status' => ['required', Rule::enum(RecordStatus::class)],
-        ], ['code.unique' => 'Ce code est déjà utilisé par une autre agence.', 'status.enum' => 'Sélectionnez un statut valide.'])->validate();
+        ], ['default_currency.not_in' => 'Le code du dirham des Émirats est AED, et non EAD.', 'code.unique' => 'Ce code est déjà utilisé par une autre agence.', 'status.enum' => 'Sélectionnez un statut valide.'])->validate();
 
         return DB::transaction(function () use ($actor, $branch, $data): Branch {
             $branch = Branch::whereKey($branch->id)->lockForUpdate()->firstOrFail();

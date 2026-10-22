@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CashMovementType;
 use App\Enums\TransferStatus;
 use App\Models\Concerns\PreservesFinancialHistory;
 use Illuminate\Database\Eloquent\Builder;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Transfer extends Model
 {
@@ -59,6 +61,16 @@ class Transfer extends Model
     public function events(): HasMany
     {
         return $this->hasMany(TransferEvent::class);
+    }
+
+    public function feeWithdrawalItems(): HasMany
+    {
+        return $this->hasMany(FeeWithdrawalItem::class);
+    }
+
+    public function depositMovement(): HasOne
+    {
+        return $this->hasOne(CashMovement::class)->where('type', CashMovementType::Deposit);
     }
 
     public function movements(): HasMany

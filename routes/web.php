@@ -6,6 +6,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExchangeRateController;
+use App\Http\Controllers\FeeRevenueController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TransferController;
@@ -31,6 +32,10 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         Route::post('/notifications/{notification}/open', [NotificationController::class, 'open'])->whereUuid('notification')->name('notifications.open');
         Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->whereUuid('notification')->name('notifications.read');
         Route::get('/dashboard', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
+        Route::get('/reports/fees', [FeeRevenueController::class, 'index'])->name('fee-revenue.index');
+        Route::get('/reports/fees/export', [FeeRevenueController::class, 'export'])->name('fee-revenue.export');
+        Route::get('/reports/fees/withdrawals/create', [FeeRevenueController::class, 'create'])->name('fee-revenue.withdrawals.create');
+        Route::post('/reports/fees/withdrawals', [FeeRevenueController::class, 'store'])->name('fee-revenue.withdrawals.store');
         Route::get('/treasury', [TreasuryController::class, 'index'])->name('treasury.index');
         Route::get('/treasury/cash-outs/create', [TreasuryController::class, 'create'])->name('treasury.cash-outs.create');
         Route::post('/treasury/cash-outs', [TreasuryController::class, 'store'])->name('treasury.cash-outs.store');

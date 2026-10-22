@@ -18,13 +18,13 @@ final class RecordExchangeRate
         Gate::forUser($actor)->authorize('create', ExchangeRate::class);
 
         $data = Validator::make($input, [
-            'from_currency' => ['required', 'string', 'regex:/^[A-Z]{3}$/'],
-            'to_currency' => ['required', 'string', 'regex:/^[A-Z]{3}$/', 'different:from_currency'],
+            'from_currency' => ['required', 'string', 'regex:/^[A-Z]{3}$/', 'not_in:EAD'],
+            'to_currency' => ['required', 'string', 'regex:/^[A-Z]{3}$/', 'not_in:EAD', 'different:from_currency'],
             'rate' => ['required', 'string', 'regex:/^(0|[1-9][0-9]{0,11})(\.[0-9]{1,6})?$/', 'numeric', 'gt:0'],
             'effective_from' => ['required', 'date_format:Y-m-d H:i:s'],
             'effective_until' => ['nullable', 'date_format:Y-m-d H:i:s', 'after:effective_from'],
             'active' => ['sometimes', 'boolean'],
-        ])->validate();
+        ], ['from_currency.not_in' => 'Le code du dirham des Émirats est AED, et non EAD.', 'to_currency.not_in' => 'Le code du dirham des Émirats est AED, et non EAD.'])->validate();
 
         return DB::transaction(function () use ($actor, $data): ExchangeRate {
             app(ExchangeRateLock::class)->acquire($data['from_currency'], $data['to_currency']);

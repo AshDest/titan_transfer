@@ -22,9 +22,9 @@ final class CreateBranch
             'code' => ['required', 'string', 'regex:/^[A-Z0-9]{2,12}$/', Rule::unique('branches', 'code')],
             'country' => ['required', 'string', 'max:100'],
             'city' => ['required', 'string', 'max:100'],
-            'default_currency' => ['required', 'string', 'regex:/^[A-Z]{3}$/'],
+            'default_currency' => ['required', 'string', 'regex:/^[A-Z]{3}$/', 'not_in:EAD'],
             'timezone' => ['required', 'timezone:all', 'max:64'],
-        ])->validate();
+        ], ['default_currency.not_in' => 'Le code du dirham des Émirats est AED, et non EAD.'])->validate();
 
         return DB::transaction(function () use ($actor, $data): Branch {
             $branch = Branch::query()->create($data)->refresh();
