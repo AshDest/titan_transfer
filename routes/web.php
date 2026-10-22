@@ -52,7 +52,7 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         Route::post('/exchange-rates/{exchange_rate}/activate', [ExchangeRateController::class, 'activate'])->name('exchange-rates.activate');
         Route::post('/exchange-rates/{exchange_rate}/deactivate', [ExchangeRateController::class, 'deactivate'])->name('exchange-rates.deactivate');
         Route::post('/fee-rules/{fee_rule}/deactivate', [TransferFeeRuleController::class, 'deactivate'])->name('fee-rules.deactivate');
-        Route::resource('fee-rules', TransferFeeRuleController::class)->only(['index', 'create', 'store']);
+        Route::resource('fee-rules', TransferFeeRuleController::class)->only(['index', 'create', 'store', 'destroy']);
         Route::resource('users', UserController::class)->only(['index', 'create', 'store']);
         Route::get('/users/{user}/phone', [UserController::class, 'editPhone'])->name('users.phone.edit');
         Route::patch('/users/{user}/phone', [UserController::class, 'updatePhone'])->name('users.phone.update');

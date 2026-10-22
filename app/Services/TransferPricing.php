@@ -30,6 +30,7 @@ final class TransferPricing
             }
         }
         $amountValue = BigDecimal::of($amount);
+        /** Keep removed versions until version selection to prevent reviving an older tariff. */
         $rules = TransferFeeRule::query()->where('source_currency', $source->default_currency)
             ->where(fn ($query) => $query->whereNull('source_branch_id')->orWhere('source_branch_id', $source->id))
             ->where(fn ($query) => $query->whereNull('destination_branch_id')->orWhere('destination_branch_id', $destination->id))
@@ -41,7 +42,7 @@ final class TransferPricing
                 && ($rule->maximum_amount === null || $amountValue->isLessThanOrEqualTo($rule->maximum_amount)));
         $specificity = fn ($rule): int => (int) ($rule->source_branch_id !== null) + (int) ($rule->destination_branch_id !== null);
         $rank = $rules->max($specificity);
-        $matches = $rules->filter(fn ($rule) => $specificity($rule) === $rank && $rule->active);
+        $matches = $rules->filter(fn ($rule) => $specificity($rule) === $rank && $rule->active && $rule->deleted_at === null);
         if ($matches->count() !== 1 || ! $matches->first()->active) {
             throw ValidationException::withMessages(['amount_received' => $matches->count() > 1
                 ? 'Plusieurs règles de frais se chevauchent. Contactez votre administrateur.'

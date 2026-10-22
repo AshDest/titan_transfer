@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Finance\DeleteTransferFeeRule;
 use App\Actions\Finance\RecordTransferFeeRule;
 use App\Enums\RecordStatus;
 use App\Http\Requests\FinancialConfigurationRequest;
@@ -17,7 +18,7 @@ class TransferFeeRuleController extends Controller
     public function index(): View
     {
         Gate::authorize('viewAny', TransferFeeRule::class);
-        $records = TransferFeeRule::with(['sourceBranch', 'destinationBranch', 'createdBy'])->latest('id')->paginate(15);
+        $records = TransferFeeRule::with(['sourceBranch', 'destinationBranch', 'createdBy'])->whereNull('deleted_at')->latest('id')->paginate(15);
 
         return view('fee-rules.index', compact('records'));
     }
@@ -39,6 +40,7 @@ class TransferFeeRuleController extends Controller
     public function deactivate(Request $request, TransferFeeRule $feeRule, RecordTransferFeeRule $action): RedirectResponse
     {
         Gate::authorize('create', TransferFeeRule::class);
+        abort_if($feeRule->deleted_at !== null, 404);
         $start = $feeRule->effective_from?->isFuture() ? $feeRule->effective_from : now('UTC');
         $action->handle($request->user(), [
             ...$feeRule->only(['name', 'source_branch_id', 'destination_branch_id', 'source_currency', 'percentage', 'fixed_amount', 'minimum_amount', 'maximum_amount']),
@@ -47,5 +49,14 @@ class TransferFeeRuleController extends Controller
         ]);
 
         return redirect()->route('fee-rules.index')->with('status', 'Tranche désactivée. Son historique est conservé.');
+    }
+
+    public function destroy(Request $request, TransferFeeRule $feeRule, DeleteTransferFeeRule $action): RedirectResponse
+    {
+        Gate::authorize('delete', $feeRule);
+        $request->validate(['confirmation' => ['accepted']], ['confirmation.accepted' => 'Confirmez la suppression.']);
+        $action->handle($request->user(), $feeRule);
+
+        return redirect()->route('fee-rules.index')->with('status', 'Règle de frais supprimée. Les transferts existants sont conservés.');
     }
 }

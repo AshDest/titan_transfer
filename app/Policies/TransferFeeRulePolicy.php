@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\Permission;
+use App\Enums\Role;
 use App\Models\TransferFeeRule;
 use App\Models\User;
 
@@ -30,6 +31,6 @@ class TransferFeeRulePolicy
 
     public function delete(User $user, TransferFeeRule $record): bool
     {
-        return false;
+        return $user->canAccessApplication() && $user->hasRole(Role::Administrator->value) && $this->create($user);
     }
 }

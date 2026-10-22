@@ -144,6 +144,17 @@ class FixedTransferFeesTest extends TestCase
         $this->assertDatabaseCount('transfer_fee_rules', 3);
     }
 
+    public function test_removing_a_tariff_after_preview_prevents_recording_a_transfer_with_it(): void
+    {
+        [$source, $destination] = $this->corridor();
+        $rule = TransferFeeRule::factory()->fixed('5')->create(['maximum_amount' => '1000']);
+        $preview = $this->actingAs($this->admin())->post(route('transfers.preview'), $this->transferInput($source, $destination))->assertOk();
+        $this->delete(route('fee-rules.destroy', $rule), ['confirmation' => '1'])->assertSessionHasNoErrors();
+        $this->post(route('transfers.store'), ['review_token' => $preview->viewData('token'), 'cash_received' => '1'])->assertSessionHasErrors();
+        $this->assertDatabaseCount('transfers', 0);
+        $this->assertDatabaseCount('cash_accounts', 0);
+    }
+
     public function test_cashier_cannot_create_or_disable_fees(): void
     {
         $cashier = User::factory()->for(Branch::factory())->create()->assignRole(Role::SourceCashier->value);
