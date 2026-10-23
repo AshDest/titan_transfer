@@ -40,7 +40,7 @@
                         <legend class="sr-only">{{ $labels[3] }}</legend>
                         <div class="form-grid">
                             <x-field :name="$party.'.first_name'" label="Prénom" required maxlength="100" />
-                            <x-field :name="$party.'.last_name'" label="Nom" required maxlength="100" />
+                            <x-field :name="$party.'.last_name'" label="Nom" maxlength="100" />
                             <x-field :name="$party.'.phone'" label="Téléphone" type="tel" required maxlength="32" placeholder="+243… / +971…" />
                             <x-field :name="$party.'.country'" label="Pays" required maxlength="100" />
                         </div>

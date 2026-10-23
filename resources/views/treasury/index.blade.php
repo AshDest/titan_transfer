@@ -1,5 +1,11 @@
 <x-layouts.workspace title="Trésorerie">
-    <x-page-heading title="Trésorerie" :create="auth()->user()->can('createWithdrawal', \App\Models\CashAccount::class) ? 'treasury.cash-outs.create' : null" button="Sortie de caisse" />
+    <div class="page-heading">
+        <h1>Trésorerie</h1>
+        <div class="treasury-heading-actions">
+            @can('createFunding', \App\Models\CashAccount::class)<a class="primary-button compact-button" href="{{ route('treasury.cash-ins.create') }}"><x-icon name="plus" /> Approvisionner</a>@endcan
+            @can('createWithdrawal', \App\Models\CashAccount::class)<a class="secondary-button" href="{{ route('treasury.cash-outs.create') }}">Sortie de caisse</a>@endcan
+        </div>
+    </div>
     <div class="treasury-page">
         <section aria-labelledby="treasury-balances-title">
             <div class="treasury-section-heading">
@@ -31,7 +37,7 @@
             </div>
             <form method="GET" action="{{ route('treasury.index') }}" class="editor-form treasury-filters" aria-label="Filtrer les mouvements">
                 <div class="treasury-filter-grid">
-                    <x-field name="q" label="Rechercher" placeholder="Bénéficiaire, motif, référence…" maxlength="100" :value="request('q', '')" />
+                    <x-field name="q" label="Rechercher" placeholder="Personne, motif, référence…" maxlength="100" :value="request('q', '')" />
                     @if(auth()->user()->canViewAllCashAccounts())
                         <x-field name="branch_id" label="Agence">
                             <option value="">Toutes les agences</option>
@@ -52,7 +58,7 @@
                 </div>
             </form>
             <div class="treasury-ledger">
-                <x-listing :records="$records" :headings="['Opération', 'Agence', 'Bénéficiaire / Motif', 'Montant', 'Solde après saisie', 'Détails']" :searchable="false">
+                <x-listing :records="$records" :headings="['Opération', 'Agence', 'Personne / Motif', 'Montant', 'Solde après saisie', 'Détails']" :searchable="false">
                     @foreach($records as $record)
                         <tr>
                             <td>
@@ -63,6 +69,7 @@
                             <td class="treasury-agency-cell">{{ $record->account->branch->name }}</td>
                             <td class="treasury-purpose-cell">
                                 @if($record->recipient_name)<strong>{{ $record->recipient_name }}</strong>@endif
+                                @if($record->provider_name)<strong>{{ $record->provider_name }}</strong><small>Apporteur des fonds</small>@endif
                                 <p>{{ $record->description }}</p>
                                 @if($record->transfer)
                                     @can('view', $record->transfer)<a class="treasury-reference" href="{{ route('transfers.show', $record->transfer) }}">{{ $record->transfer->reference }} <x-icon name="arrow" /></a>@else<span class="treasury-reference">{{ $record->transfer->reference }}</span>@endcan

@@ -3,7 +3,7 @@
     @if($errors->any())<div class="notice page-notice" role="alert"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
     <section class="editor-form transfer-review">
         <div class="receipt-heading"><x-brand /><span class="pill">{{ $transfer->status->label() }}</span></div>
-        <p class="field-hint">Reçu d’encaissement · {{ $transfer->reference }} · {{ $transfer->created_at->format('d/m/Y H:i') }}</p>
+        <p class="field-hint">{{ $transfer->status === \App\Enums\TransferStatus::Paid ? 'Reçu de paiement' : 'Reçu d’encaissement' }} · {{ $transfer->reference }} · {{ ($transfer->paid_at ?? $transfer->created_at)->format('d/m/Y H:i') }}</p>
         <div class="transfer-route"><strong>{{ $transfer->sourceBranch->name }}</strong><x-icon name="arrow" /><strong>{{ $transfer->destinationBranch->name }}</strong></div>
         <div class="form-grid party-summary">
             @foreach(['sender' => 'Client expéditeur', 'beneficiary' => 'Bénéficiaire'] as $party => $label)
@@ -14,6 +14,7 @@
         @if($transfer->notes)<p class="form-context">{{ $transfer->notes }}</p>@endif
         @if($transfer->status === \App\Enums\TransferStatus::Pending)<p class="form-context">Encaissement enregistré. Le transfert attend sa validation avant la mise à disposition des fonds.</p>@endif
         @if($transfer->approved_at)<p class="form-context">Approuvé par <strong>{{ $transfer->approvedBy->name }}</strong> le {{ $transfer->approved_at->timezone(auth()->user()->branch?->timezone ?? 'UTC')->format('d/m/Y H:i') }}.</p>@endif
+        @if($transfer->paid_at)<p class="form-context">Payé par <strong>{{ $transfer->paidBy->name }}</strong> le {{ $transfer->paid_at->timezone($transfer->destinationBranch->timezone)->format('d/m/Y H:i') }} · {{ $transfer->destinationBranch->name }}.</p>@endif
         @if($transfer->rejected_at)<div class="form-context rejection-context"><strong>Rejeté par {{ $transfer->rejectedBy->name }}</strong><p>{{ $transfer->rejection_reason }}</p><p>Le dépôt reste en caisse jusqu’au remboursement effectif du client.</p></div>@endif
         <p class="field-hint receipt-print-help">Impression thermique : papier 80 mm, échelle 100 %, en-têtes et pieds de page désactivés.</p>
         <div class="form-actions receipt-actions"><a class="secondary-button" href="{{ route('transfers.index') }}">Tous les transferts</a><button type="button" class="primary-button compact-button" data-print-receipt>Imprimer le reçu · 80 mm</button></div>
@@ -41,8 +42,21 @@
             </section>
         @endcanany
     @endif
+    @if(in_array($transfer->status, [\App\Enums\TransferStatus::Approved, \App\Enums\TransferStatus::ReadyForPayout]))
+        @can('pay', $transfer)
+            <section class="review-decision" aria-labelledby="payment-title">
+                <h2 id="payment-title">Paiement au bénéficiaire</h2>
+                <p>@money($transfer->payout_amount) {{ $transfer->destination_currency }} · {{ $transfer->destinationBranch->name }}</p>
+                <form method="POST" action="{{ route('transfers.pay', $transfer) }}" data-review-transfer>
+                    @csrf
+                    <label class="cash-confirmation"><input type="checkbox" name="confirmed" value="1" required> J’ai vérifié l’identité du bénéficiaire et lui ai remis le montant indiqué.</label>
+                    <button class="primary-button compact-button">Confirmer le paiement</button>
+                </form>
+            </section>
+        @endcan
+    @endif
     <section class="transfer-history"><h2>Historique</h2>
-        @foreach($transfer->events as $event)<p><strong>{{ $event->created_at->format('d/m/Y H:i') }}</strong> · {{ match($event->action) { 'TRANSFER_CREATED' => 'Opération créée et dépôt en caisse enregistré', 'TRANSFER_APPROVED' => 'Transfert approuvé', 'TRANSFER_REJECTED' => 'Transfert rejeté', default => $event->action } }} · {{ $event->actor->name }}</p>@endforeach
+        @foreach($transfer->events as $event)<p><strong>{{ $event->created_at->format('d/m/Y H:i') }}</strong> · {{ match($event->action) { 'TRANSFER_CREATED' => 'Opération créée et dépôt en caisse enregistré', 'TRANSFER_APPROVED' => 'Transfert approuvé', 'TRANSFER_REJECTED' => 'Transfert rejeté', 'TRANSFER_PAID' => 'Bénéficiaire payé et caisse de retrait débitée', default => $event->action } }} · {{ $event->actor->name }}</p>@endforeach
     </section>
     <x-thermal-receipt :transfer="$transfer" :auto-print="$printReceipt" />
 </x-layouts.workspace>

@@ -39,6 +39,11 @@ final class TransferInput
             }
         }
         $data = Validator::make($input, $rules)->validate();
+        foreach (['sender', 'beneficiary'] as $party) {
+            if ($data[$party.'_mode'] === 'new') {
+                $data[$party]['last_name'] ??= null;
+            }
+        }
         $source = Branch::findOrFail($data['source_branch_id']);
         $destination = Branch::findOrFail($data['destination_branch_id']);
         Gate::forUser($actor)->authorize('create', [Transfer::class, $source]);

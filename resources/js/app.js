@@ -294,3 +294,11 @@ document.querySelectorAll('[data-confirm-delete]').forEach(form => {
         if (!window.confirm(form.dataset.confirmDelete)) event.preventDefault();
     });
 });
+
+const fundingForm = document.querySelector('[data-funding-form]');
+if (fundingForm) {
+    const branch = fundingForm.querySelector('[name="branch_id"]');
+    branch.addEventListener('change', () => {
+        fundingForm.querySelector('[name="currency"]').value = branch.selectedOptions[0]?.dataset.currency ?? '';
+    });
+}

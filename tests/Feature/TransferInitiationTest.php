@@ -381,12 +381,45 @@ class TransferInitiationTest extends TestCase
         $transfer->forceFill(['payout_amount' => '999.00'])->save();
     }
 
+    #[DataProvider('optionalLastNames')]
+    public function test_transfer_with_parties_without_last_names_can_be_reviewed_saved_and_printed(array $name): void
+    {
+        $input = $this->input();
+        foreach (['sender', 'beneficiary'] as $party) {
+            unset($input[$party]['last_name']);
+            $input[$party] = [...$input[$party], ...$name];
+        }
+        $preview = $this->actingAs($this->cashier)->post(route('transfers.preview'), $input)
+            ->assertOk()->assertSee('Marie')->assertSee('Paul');
+        $this->post(route('transfers.store'), ['review_token' => $preview->viewData('token'), 'cash_received' => '1'])
+            ->assertSessionHasNoErrors();
+        $transfer = Transfer::sole();
+        $this->assertNull(Customer::sole()->last_name);
+        $this->assertNull(Beneficiary::sole()->last_name);
+        foreach (['sender', 'beneficiary'] as $party) {
+            $this->assertArrayHasKey('last_name', $transfer->parties_snapshot[$party]);
+            $this->assertNull($transfer->parties_snapshot[$party]['last_name']);
+        }
+        $this->get(route('transfers.show', $transfer))->assertOk()->assertSee('Marie')->assertSee('Paul')->assertSee('data-thermal-receipt', false);
+        $this->get(route('transfers.index'))->assertOk()->assertSee('Marie');
+        $input['sender_mode'] = 'existing';
+        $input['sender_id'] = $transfer->sender_id;
+        $input['beneficiary_mode'] = 'existing';
+        $input['beneficiary_id'] = $transfer->beneficiary_id;
+        $this->post(route('transfers.preview'), $input)->assertOk()->assertSee('Marie')->assertSee('Paul');
+    }
+
+    public static function optionalLastNames(): array
+    {
+        return ['omitted' => [[]], 'empty' => [['last_name' => '']], 'null' => [['last_name' => null]]];
+    }
+
     public function test_validation_errors_and_party_inputs_are_visible_on_form(): void
     {
         $data = $this->input();
-        unset($data['sender']['last_name']);
+        unset($data['sender']['phone']);
         $this->actingAs($this->cashier)->followingRedirects()->from(route('transfers.create'))->post(route('transfers.preview'), $data)
-            ->assertOk()->assertSee('Marie')->assertSee('sender.last_name-error');
+            ->assertOk()->assertSee('Marie')->assertSee('sender.phone-error');
     }
 
     public function test_unauthenticated_visitors_cannot_open_or_create_transfers(): void

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\CashMovementType;
 use App\Enums\FeeType;
 use App\Models\Beneficiary;
 use App\Models\Branch;
@@ -38,8 +39,11 @@ class OperationRecorded extends Notification
     {
         $record = $this->subject;
         [$title, $message] = match ($record::class) {
-            CashMovement::class => ['Sortie de caisse enregistrée', DecimalFormatter::money($record->amount).' '.$record->currency.' remis à '.$record->recipient_name.' · '.$record->account->branch->name.'.'],
+            CashMovement::class => $record->type === CashMovementType::CashIn
+                ? ['Caisse approvisionnée', DecimalFormatter::money($record->amount).' '.$record->currency.' reçus de '.$record->provider_name.' · '.$record->account->branch->name.'.']
+                : ['Sortie de caisse enregistrée', DecimalFormatter::money($record->amount).' '.$record->currency.' remis à '.$record->recipient_name.' · '.$record->account->branch->name.'.'],
             Transfer::class => match ($this->event) {
+                'paid' => ['Transfert payé', $record->reference.' : '.DecimalFormatter::money($record->payout_amount).' '.$record->destination_currency.' remis au bénéficiaire à '.$record->destinationBranch->name.'.'],
                 'approved' => ['Transfert approuvé', $record->reference.' a été validé et transmis à l’agence de retrait.'],
                 'rejected' => ['Transfert rejeté', $record->reference.' a été rejeté. Consultez le motif dans le détail du transfert.'],
                 default => ['Transfert enregistré', $record->reference.' : '.DecimalFormatter::money($record->amount_received).' '.$record->source_currency.' encaissés. En attente de validation.'],

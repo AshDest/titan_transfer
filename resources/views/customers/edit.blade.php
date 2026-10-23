@@ -5,7 +5,7 @@
         @method('PUT')
         <div class="form-grid">
             <x-field name="first_name" label="Prénom" :value="$customer->first_name" required maxlength="100" autocomplete="given-name" />
-            <x-field name="last_name" label="Nom" :value="$customer->last_name" required maxlength="100" autocomplete="family-name" />
+            <x-field name="last_name" label="Nom" :value="$customer->last_name" maxlength="100" autocomplete="family-name" />
             <x-field name="phone" label="Téléphone" :value="$customer->phone" type="tel" required maxlength="32" autocomplete="tel" />
             <x-field name="email" label="Adresse e-mail" :value="$customer->email" type="email" maxlength="255" autocomplete="email" />
             <x-field name="country" label="Pays" :value="$customer->country" required maxlength="100" />

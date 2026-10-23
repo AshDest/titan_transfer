@@ -21,6 +21,7 @@ class TransferStatusTest extends TestCase
             'approval' => [TransferStatus::Pending, TransferStatus::Approved, true],
             'ready' => [TransferStatus::Approved, TransferStatus::ReadyForPayout, true],
             'payment' => [TransferStatus::ReadyForPayout, TransferStatus::Paid, true],
+            'approved payment' => [TransferStatus::Approved, TransferStatus::Paid, true],
             'rejection' => [TransferStatus::Pending, TransferStatus::Rejected, true],
             'cancel pending' => [TransferStatus::Pending, TransferStatus::Cancelled, true],
             'cancel approved' => [TransferStatus::Approved, TransferStatus::Cancelled, true],

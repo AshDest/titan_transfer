@@ -116,8 +116,28 @@ class ModuleInterfacesTest extends TestCase
         $this->followingRedirects()->actingAs($user)->from(route('customers.create'))->post(route('customers.store'), [
             'branch_id' => $user->branch_id, 'first_name' => 'Retained',
         ])->assertOk()->assertSee('Retained')->assertSee('aria-invalid="true"', false)
-            ->assertSee('last_name-error')->assertSee('phone-error')->assertSee('country-error');
+            ->assertDontSee('last_name-error')->assertSee('phone-error')->assertSee('country-error');
         $this->assertDatabaseCount('customers', 0);
+    }
+
+    #[DataProvider('optionalLastNames')]
+    public function test_customers_and_beneficiaries_can_be_registered_without_a_last_name(array $name): void
+    {
+        $user = $this->cashier();
+        $person = ['branch_id' => $user->branch_id, 'first_name' => 'Marie', 'phone' => '+243970000001', 'country' => 'RDC', ...$name];
+        $this->actingAs($user)->post(route('customers.store'), $person)->assertSessionHasNoErrors()->assertRedirect(route('customers.index'));
+        $customer = Customer::sole();
+        $this->assertNull($customer->last_name);
+        $this->post(route('beneficiaries.store'), [...$person, 'customer_id' => $customer->id])
+            ->assertSessionHasNoErrors()->assertRedirect(route('beneficiaries.index'));
+        $this->assertNull(Beneficiary::sole()->last_name);
+        $this->get(route('customers.index'))->assertOk()->assertSee('Marie');
+        $this->get(route('beneficiaries.index'))->assertOk()->assertSee('Marie');
+    }
+
+    public static function optionalLastNames(): array
+    {
+        return ['omitted' => [[]], 'empty' => [['last_name' => '']], 'null' => [['last_name' => null]]];
     }
 
     public function test_beneficiary_can_be_created_for_a_selected_customer(): void

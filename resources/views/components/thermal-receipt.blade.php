@@ -2,9 +2,10 @@
 <article class="thermal-receipt" data-thermal-receipt @if($autoPrint) data-auto-print @endif aria-hidden="true">
     <header class="thermal-heading">
         <img class="thermal-logo" src="{{ asset('images/brand/titan-express-dark.png') }}" alt="Titan Express" width="8334" height="2313">
-        <p>REÇU D’ENCAISSEMENT</p>
+        <p>{{ $transfer->status === \App\Enums\TransferStatus::Paid ? 'REÇU DE PAIEMENT' : 'REÇU D’ENCAISSEMENT' }}</p>
         <strong>{{ $transfer->reference }}</strong>
-        <p>{{ $transfer->created_at->timezone($transfer->sourceBranch->timezone)->format('d/m/Y H:i') }} · {{ $transfer->sourceBranch->timezone }}</p>
+        @php($receiptTimezone = $transfer->status === \App\Enums\TransferStatus::Paid ? $transfer->destinationBranch->timezone : $transfer->sourceBranch->timezone)
+        <p>{{ ($transfer->paid_at ?? $transfer->created_at)->copy()->timezone($receiptTimezone)->format('d/m/Y H:i') }} · {{ $receiptTimezone }}</p>
     </header>
     <section class="thermal-section">
         <p><b>Départ :</b> {{ $transfer->sourceBranch->name }}</p>
@@ -22,7 +23,7 @@
                 Frais (<span title="Pourcentage exact : {{ $transfer->fee_percentage }} %">@percentage($transfer->fee_percentage)</span> %)@endif</dt><dd>@money($transfer->fee_amount) {{ $transfer->source_currency }}</dd></div>
         <div><dt>Montant net</dt><dd>@money($transfer->net_amount) {{ $transfer->source_currency }}</dd></div>
         <div class="thermal-rate"><dt>Taux de change</dt><dd>1 {{ $transfer->source_currency }} = <span title="Taux exact : {{ $transfer->exchange_rate }}">@rate($transfer->exchange_rate)</span> {{ $transfer->destination_currency }}</dd></div>
-        <div class="thermal-payout"><dt>À retirer</dt><dd>@money($transfer->payout_amount) {{ $transfer->destination_currency }}</dd></div>
+        <div class="thermal-payout"><dt>{{ $transfer->status === \App\Enums\TransferStatus::Paid ? 'Montant remis' : 'À retirer' }}</dt><dd>@money($transfer->payout_amount) {{ $transfer->destination_currency }}</dd></div>
     </dl>
     <footer class="thermal-footer">
         <p><b>{{ $transfer->status->label() }}</b></p>

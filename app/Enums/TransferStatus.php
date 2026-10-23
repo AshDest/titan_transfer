@@ -28,7 +28,7 @@ enum TransferStatus: string
         return match ($this) {
             self::Draft => [self::Pending],
             self::Pending => [self::Approved, self::Rejected, self::Cancelled],
-            self::Approved => [self::ReadyForPayout, self::Cancelled],
+            self::Approved => [self::ReadyForPayout, self::Paid, self::Cancelled],
             self::ReadyForPayout => [self::Paid],
             self::Paid => [self::Reversed],
             self::Rejected, self::Cancelled, self::Reversed => [],

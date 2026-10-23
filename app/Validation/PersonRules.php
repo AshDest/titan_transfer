@@ -9,7 +9,7 @@ final class PersonRules
     {
         return [
             'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['nullable', 'string', 'max:100'],
             'phone' => ['required', 'string', 'max:32', 'regex:/^\+?[0-9 ()-]{6,32}$/'],
             'country' => ['required', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:100'],

@@ -16,7 +16,7 @@ enum CashMovementType: string
         return match ($this) {
             self::Deposit => 'Encaissement de transfert',
             self::Payout => 'Paiement de transfert',
-            self::CashIn => 'Entrée de caisse',
+            self::CashIn => 'Approvisionnement',
             self::CashOut => 'Sortie de caisse',
             self::Adjustment => 'Ajustement',
             self::Reversal => 'Extourne',

@@ -21,7 +21,7 @@ class Transfer extends Model
 
     protected function casts(): array
     {
-        return ['fee_type' => FeeType::class, 'approved_at' => 'datetime', 'rejected_at' => 'datetime', 'parties_snapshot' => 'array', 'status' => TransferStatus::class,
+        return ['fee_type' => FeeType::class, 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'rejected_at' => 'datetime', 'parties_snapshot' => 'array', 'status' => TransferStatus::class,
             'amount_received' => 'decimal:2', 'fee_percentage' => 'decimal:4', 'fee_amount' => 'decimal:2',
             'net_amount' => 'decimal:2', 'exchange_rate' => 'decimal:6', 'payout_amount' => 'decimal:2'];
     }
@@ -52,6 +52,11 @@ class Transfer extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function paidBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'paid_by');
     }
 
     public function rejectedBy(): BelongsTo

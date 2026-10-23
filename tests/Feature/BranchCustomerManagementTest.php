@@ -67,6 +67,14 @@ class BranchCustomerManagementTest extends TestCase
         $this->assertSame('Client modifié', $admin->notifications()->sole()->data['title']);
     }
 
+    public function test_administrator_can_clear_a_customer_last_name(): void
+    {
+        $customer = Customer::factory()->create();
+        $this->actingAs($this->administrator())->put(route('customers.update', $customer), $this->customerInput($customer, ['last_name' => '']))
+            ->assertSessionHasNoErrors()->assertRedirect(route('customers.index'));
+        $this->assertNull($customer->refresh()->last_name);
+    }
+
     public function test_unused_records_can_be_deleted_only_after_confirmation(): void
     {
         $admin = $this->administrator();

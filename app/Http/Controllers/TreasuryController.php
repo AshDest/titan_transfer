@@ -49,7 +49,7 @@ class TreasuryController extends Controller
             ->when(! empty($filters['movement_id']), fn ($query) => $query->whereKey($filters['movement_id']));
         $search = trim($filters['q'] ?? '');
         $query->when($search !== '', fn ($query) => $query->where(fn ($query) => $query
-            ->where('recipient_name', 'like', '%'.$search.'%')->orWhere('description', 'like', '%'.$search.'%')
+            ->where('recipient_name', 'like', '%'.$search.'%')->orWhere('provider_name', 'like', '%'.$search.'%')->orWhere('description', 'like', '%'.$search.'%')
             ->orWhereHas('transfer', fn ($transfer) => $transfer->where('reference', 'like', '%'.$search.'%'))));
         $records = $query->orderByDesc('occurred_on')->orderByDesc('id')->paginate(25)->withQueryString();
         $timezone = $user->branch?->timezone ?? 'UTC';

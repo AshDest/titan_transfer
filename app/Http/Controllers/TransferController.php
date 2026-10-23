@@ -138,7 +138,7 @@ class TransferController extends Controller
     public function show(Request $request, Transfer $transfer): View
     {
         Gate::authorize('view', $transfer);
-        $transfer->load(['sourceBranch', 'destinationBranch', 'events.actor', 'movements', 'approvedBy', 'rejectedBy']);
+        $transfer->load(['sourceBranch', 'destinationBranch', 'events.actor', 'movements', 'approvedBy', 'rejectedBy', 'paidBy']);
         $printReceipt = $request->session()->get('print_transfer') === $transfer->uuid;
         if ($printReceipt) {
             $request->session()->forget('print_transfer');

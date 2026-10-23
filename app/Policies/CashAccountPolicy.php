@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Enums\Permission;
 use App\Enums\RecordStatus;
 use App\Enums\Role;
+use App\Models\Branch;
 use App\Models\CashAccount;
 use App\Models\User;
 
@@ -24,6 +25,19 @@ class CashAccountPolicy
     {
         return $this->viewAny($user) && $user->can(Permission::CashWithdraw->value)
             && ($user->hasRole(Role::Administrator->value) || $user->isCashier());
+    }
+
+    public function createFunding(User $user): bool
+    {
+        return $this->viewAny($user) && $user->can(Permission::CashDeposit->value)
+            && ! $user->hasRole(Role::SourceCashier->value)
+            && $user->hasAnyRole([Role::Administrator->value, Role::DestinationCashier->value]);
+    }
+
+    public function fundBranch(User $user, Branch $branch): bool
+    {
+        return $this->createFunding($user) && $branch->status === RecordStatus::Active
+            && ($user->canViewAllCashAccounts() || $user->branch_id === $branch->id);
     }
 
     public function viewFeeRevenue(User $user): bool
