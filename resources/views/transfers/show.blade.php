@@ -48,10 +48,15 @@
                 <h2 id="payment-title">Paiement au bénéficiaire</h2>
                 <p>@money($transfer->payout_amount) {{ $transfer->destination_currency }} · {{ $transfer->destinationBranch->name }}</p>
                 <p>La confirmation notifiera {{ $transfer->sourceBranch->name }}.</p>
+                <p>Solde disponible : <strong>@money($paymentAccount?->balance ?? '0.00') {{ $transfer->destination_currency }}</strong></p>
+                @unless($canPayFromCash)
+                    <p class="field-error" role="alert">{{ $paymentAccount && $paymentAccount->status !== \App\Enums\RecordStatus::Active ? 'Cette caisse est inactive.' : 'Solde insuffisant. Approvisionnez la caisse avant de servir le bénéficiaire.' }}</p>
+                    @can('fundBranch', [\App\Models\CashAccount::class, $transfer->destinationBranch])<a class="secondary-button" href="{{ route('treasury.cash-ins.create') }}">Approvisionner la caisse</a>@endcan
+                @endunless
                 <form method="POST" action="{{ route('transfers.pay', $transfer) }}" data-review-transfer>
                     @csrf
-                    <label class="cash-confirmation"><input type="checkbox" name="confirmed" value="1" required> J’ai vérifié l’identité du bénéficiaire et lui ai remis le montant indiqué.</label>
-                    <button class="primary-button compact-button">Confirmer le paiement</button>
+                    <label class="cash-confirmation"><input type="checkbox" name="confirmed" value="1" required @disabled(! $canPayFromCash)> J’ai vérifié l’identité du bénéficiaire et lui ai remis le montant indiqué.</label>
+                    <button class="primary-button compact-button" @disabled(! $canPayFromCash)>Confirmer le paiement</button>
                 </form>
             </section>
         @endcan

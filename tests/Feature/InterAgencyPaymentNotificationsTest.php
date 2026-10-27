@@ -57,9 +57,14 @@ class InterAgencyPaymentNotificationsTest extends TestCase
 
     public function test_dubai_opens_its_alert_confirms_payment_and_goma_receives_confirmation_once(): void
     {
-        $this->assertSame(0, $this->dubai->notifications()->count());
+        $incoming = $this->dubai->notifications()->sole();
+        $this->assertSame('Nouveau transfert reçu', $incoming->data['title']);
+        $this->actingAs($this->dubai)->get(route('notifications.feed'))->assertJsonPath('unread_count', 1);
+        $this->post(route('notifications.open', $incoming->id))->assertRedirect(route('transfers.show', $this->transfer));
+        $this->get(route('transfers.show', $this->transfer))->assertOk()->assertDontSee('Confirmer le paiement');
+        $this->post(route('transfers.pay', $this->transfer), ['confirmed' => '1'])->assertSessionHasErrors('payment');
         $this->approve();
-        $alert = $this->dubai->notifications()->sole();
+        $alert = $this->dubai->notifications()->get()->first(fn ($notification) => $notification->data['event'] === 'approved');
         $this->assertSame('Transfert à payer', $alert->data['title']);
         $this->assertStringContainsString('Goma', $alert->data['message']);
         $this->assertStringContainsString('355,99 AED', $alert->data['message']);
@@ -114,12 +119,32 @@ class InterAgencyPaymentNotificationsTest extends TestCase
         $this->assertSame(TransferStatus::Approved, $this->transfer->refresh()->status);
     }
 
+    public function test_payment_button_requires_enough_cash_and_balance_is_rechecked_on_confirmation(): void
+    {
+        $this->approve();
+        $account = CashAccount::factory()->create(['branch_id' => $this->dubai->branch_id, 'currency' => 'AED', 'balance' => '355.98']);
+        $page = $this->actingAs($this->dubai)->get(route('transfers.show', $this->transfer))
+            ->assertViewHas('canPayFromCash', false)->assertSee('355,98 AED')->assertSee('Solde insuffisant.');
+        $this->assertMatchesRegularExpression('/<button[^>]+disabled[^>]*>Confirmer le paiement<\/button>/', $page->getContent());
+        $account->forceFill(['balance' => '355.99'])->save();
+        $this->get(route('transfers.show', $this->transfer))->assertViewHas('canPayFromCash', true);
+        $account->forceFill(['balance' => '0.00'])->save();
+        $this->post(route('transfers.pay', $this->transfer), ['confirmed' => '1'])->assertSessionHasErrors('payment');
+        $this->assertSame(TransferStatus::Approved, $this->transfer->refresh()->status);
+        $this->assertSame('0.00', $account->refresh()->balance);
+        $this->assertFalse($this->goma->notifications()->get()->contains(fn ($notification): bool => $notification->data['event'] === 'paid'));
+        $account->forceFill(['balance' => '355.99'])->save();
+        $this->post(route('transfers.pay', $this->transfer), ['confirmed' => '1'])->assertSessionHasNoErrors();
+        $this->assertSame('0.00', $account->refresh()->balance);
+        $this->actingAs($this->goma)->get(route('transfers.show', $this->transfer))->assertViewHas('paymentAccount', null)->assertDontSee('Solde disponible');
+    }
+
     public function test_source_cashier_cannot_open_payout_queue_and_other_agency_cannot_open_alert(): void
     {
         $this->approve();
         $this->actingAs($this->goma)->get(route('dashboard'))->assertDontSee('Transferts à payer');
         $this->get(route('transfers.index', ['awaiting_payout' => 1]))->assertForbidden();
-        $alert = $this->dubai->notifications()->sole();
+        $alert = $this->dubai->notifications()->get()->first(fn ($notification) => $notification->data['event'] === 'approved');
         $this->actingAs($this->otherCashier)->post(route('notifications.open', $alert->id))->assertNotFound();
         $this->post(route('transfers.pay', $this->transfer), ['confirmed' => '1'])->assertForbidden();
     }

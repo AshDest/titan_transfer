@@ -51,14 +51,15 @@ class TransferTotalsTest extends TestCase
         Transfer::factory()->create(['destination_branch_id' => $branch->id, 'status' => TransferStatus::Approved]);
         Transfer::factory()->create(['destination_branch_id' => $branch->id, 'status' => TransferStatus::Pending]);
         Transfer::factory()->create(['destination_branch_id' => $branch->id, 'status' => TransferStatus::Rejected]);
+        Transfer::factory()->create(['destination_branch_id' => $branch->id, 'status' => TransferStatus::Draft]);
         Transfer::factory()->create(['status' => TransferStatus::Approved]);
 
         $response = $this->actingAs($cashier)->get(route('transfers.index'));
 
         $response->assertOk();
-        $this->assertSame(2, $response->viewData('records')->total());
-        $this->assertSame('200.00', $response->viewData('totals')['USD']['received']);
-        $this->assertSame('711.98', $response->viewData('totals')['AED']['payout']);
+        $this->assertSame(4, $response->viewData('records')->total());
+        $this->assertSame('400.00', $response->viewData('totals')['USD']['received']);
+        $this->assertSame('1423.96', $response->viewData('totals')['AED']['payout']);
     }
 
     public function test_totals_preserve_cents_for_large_amounts_and_same_currency_transfers(): void

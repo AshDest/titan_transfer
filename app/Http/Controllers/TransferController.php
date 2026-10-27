@@ -7,9 +7,11 @@ use App\Enums\RecordStatus;
 use App\Enums\TransferStatus;
 use App\Models\Beneficiary;
 use App\Models\Branch;
+use App\Models\CashAccount;
 use App\Models\Customer;
 use App\Models\Transfer;
 use App\Services\TransferTotals;
+use Brick\Math\BigDecimal;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\JsonResponse;
@@ -148,12 +150,17 @@ class TransferController extends Controller
     {
         Gate::authorize('view', $transfer);
         $transfer->load(['sourceBranch', 'destinationBranch', 'events.actor', 'movements', 'approvedBy', 'rejectedBy', 'paidBy']);
+        $paymentAccount = Gate::allows('pay', $transfer)
+            ? CashAccount::where('branch_id', $transfer->destination_branch_id)->where('currency', $transfer->destination_currency)->first()
+            : null;
+        $canPayFromCash = $paymentAccount?->status === RecordStatus::Active
+            && BigDecimal::of($paymentAccount->balance)->isGreaterThanOrEqualTo($transfer->payout_amount);
         $printReceipt = $request->session()->get('print_transfer') === $transfer->uuid;
         if ($printReceipt) {
             $request->session()->forget('print_transfer');
         }
 
-        return view('transfers.show', compact('transfer', 'printReceipt'));
+        return view('transfers.show', compact('transfer', 'printReceipt', 'paymentAccount', 'canPayFromCash'));
     }
 
     /** @return array<string, mixed> */

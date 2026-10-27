@@ -254,8 +254,10 @@ document.querySelectorAll('[data-review-transfer]').forEach(reviewForm => {
 });
 window.addEventListener('pageshow', () => {
     document.querySelectorAll('[data-review-transfer] button').forEach(button => {
-        button.disabled = false;
-        if (button.dataset.originalLabel) button.textContent = button.dataset.originalLabel;
+        if (button.dataset.originalLabel) {
+            button.disabled = false;
+            button.textContent = button.dataset.originalLabel;
+        }
     });
 });
 

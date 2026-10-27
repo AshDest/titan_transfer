@@ -142,14 +142,15 @@ class TransferInitiationTest extends TestCase
         $this->getJson(route('transfers.people', ['branch_id' => $this->destination->id, 'kind' => 'sender']))->assertForbidden();
     }
 
-    public function test_destination_cashier_cannot_initiate_or_view_pending_source_transfer(): void
+    public function test_destination_cashier_can_view_pending_transfer_but_cannot_initiate_or_pay_it(): void
     {
         $transfer = $this->createOperation();
         $destinationCashier = User::factory()->for($this->destination)->create()->assignRole(Role::DestinationCashier->value);
         $this->actingAs($destinationCashier)->get(route('transfers.create'))->assertForbidden();
         $this->post(route('transfers.preview'), $this->input())->assertForbidden();
-        $this->get(route('transfers.index'))->assertOk()->assertDontSee($transfer->reference);
-        $this->get(route('transfers.show', $transfer))->assertForbidden();
+        $this->get(route('transfers.index'))->assertOk()->assertSee($transfer->reference);
+        $this->get(route('transfers.show', $transfer))->assertOk()->assertDontSee('Confirmer le paiement');
+        $this->post(route('transfers.pay', $transfer), ['confirmed' => '1'])->assertSessionHasErrors('payment');
     }
 
     public function test_another_source_agency_cannot_see_or_submit_this_agencys_transfer(): void

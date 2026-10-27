@@ -51,14 +51,14 @@ class OperationNotificationsTest extends TestCase
 
         $transfer = $this->createTransfer();
 
-        foreach ([$this->cashier, $colleague, $this->admin] as $recipient) {
+        foreach ([$this->cashier, $colleague, $this->admin, $destinationCashier] as $recipient) {
             $notification = $recipient->notifications()->sole();
             $this->assertSame($transfer->id, $notification->subject_id);
             $this->assertSame(Transfer::class, $notification->subject_type);
             $this->assertStringContainsString($transfer->reference, $notification->data['message']);
             $this->assertNull($notification->read_at);
         }
-        foreach ([$other, $destinationCashier, $withoutDashboard] as $recipient) {
+        foreach ([$other, $withoutDashboard] as $recipient) {
             $this->assertSame(0, $recipient->notifications()->count());
         }
     }
@@ -169,7 +169,7 @@ class OperationNotificationsTest extends TestCase
     {
         $transfer = $this->createTransfer();
         $notification = $this->cashier->notifications()->sole();
-        $this->cashier->branch()->associate($this->destination);
+        $this->cashier->branch()->associate(Branch::factory()->create());
         $this->cashier->save();
         $this->actingAs($this->cashier->fresh())->getJson(route('notifications.feed'))->assertJsonPath('unread_count', 0)->assertDontSee($transfer->reference);
         $this->post(route('notifications.open', $notification->id))->assertNotFound();

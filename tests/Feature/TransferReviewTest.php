@@ -58,7 +58,7 @@ class TransferReviewTest extends TestCase
     public function test_manager_approves_with_audit_notification_and_unchanged_financial_snapshot(): void
     {
         $original = $this->transfer->only(['amount_received', 'fee_percentage', 'fee_amount', 'net_amount', 'exchange_rate', 'payout_amount', 'exchange_rate_id', 'transfer_fee_rule_id', 'parties_snapshot']);
-        $this->actingAs($this->destinationCashier)->get(route('transfers.show', $this->transfer))->assertForbidden();
+        $this->actingAs($this->destinationCashier)->get(route('transfers.show', $this->transfer))->assertOk()->assertDontSee('Confirmer le paiement');
         $this->actingAs($this->manager)->get(route('transfers.show', $this->transfer))->assertOk()->assertSee('Approuver le transfert')->assertSee('Rejeter le transfert');
         $this->post(route('transfers.approve', $this->transfer), ['confirmed' => '1', 'payout_amount' => '999', 'approved_by' => $this->cashier->id])->assertRedirect(route('transfers.show', $this->transfer))->assertSessionHasNoErrors();
         $transfer = $this->transfer->refresh();
@@ -72,7 +72,7 @@ class TransferReviewTest extends TestCase
         $this->assertSame('PENDING', $event->old_values['status']);
         $this->assertSame('APPROVED', $event->new_values['status']);
         $this->assertSame($this->manager->id, $event->user_id);
-        $this->assertSame('approved', $this->destinationCashier->notifications()->sole()->data['event']);
+        $this->assertSame('approved', $this->destinationCashier->notifications()->get()->first(fn ($notification) => $notification->data['event'] === 'approved')->data['event']);
         $this->actingAs($this->destinationCashier)->get(route('transfers.show', $transfer))->assertOk()->assertSee('Approuvé par')->assertDontSee('Approuver le transfert');
     }
 
@@ -87,7 +87,7 @@ class TransferReviewTest extends TestCase
         $this->assertSame('100.00', CashAccount::sole()->balance);
         $this->assertDatabaseCount('cash_movements', 1);
         $this->assertDatabaseHas('transfer_events', ['action' => 'TRANSFER_REJECTED', 'user_id' => $this->manager->id]);
-        $this->assertSame(0, $this->destinationCashier->notifications()->count());
+        $this->assertSame(2, $this->destinationCashier->notifications()->count());
         $this->get(route('transfers.show', $this->transfer))->assertSee('Coordonnées du bénéficiaire incorrectes.')->assertSee('remboursement effectif')->assertDontSee('Approuver le transfert');
     }
 

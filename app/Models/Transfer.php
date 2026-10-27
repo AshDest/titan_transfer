@@ -36,7 +36,8 @@ class Transfer extends Model
         return $query->when(! $user->can('branches.view-all'), fn (Builder $query) => $query
             ->where(fn (Builder $query) => $query->where('source_branch_id', $user->branch_id)
                 ->orWhere(fn (Builder $query) => $query->where('destination_branch_id', $user->branch_id)
-                    ->whereIn('status', [TransferStatus::Approved, TransferStatus::ReadyForPayout, TransferStatus::Paid]))));
+                    ->whereIn('status', [TransferStatus::Pending, TransferStatus::Approved, TransferStatus::ReadyForPayout,
+                        TransferStatus::Paid, TransferStatus::Rejected, TransferStatus::Cancelled, TransferStatus::Reversed]))));
     }
 
     public function sourceBranch(): BelongsTo
