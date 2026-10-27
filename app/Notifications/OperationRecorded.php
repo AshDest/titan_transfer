@@ -57,9 +57,11 @@ class OperationRecorded extends Notification
             Branch::class => $this->event === 'updated'
                 ? ['Agence modifiée', 'L’agence '.$record->name.' ('.$record->code.') a été modifiée.']
                 : ['Nouvelle agence', 'L’agence '.$record->name.' ('.$record->code.') a été créée.'],
-            User::class => $this->event === 'phone_updated'
-                ? ['Téléphone utilisateur modifié', 'Le téléphone de connexion de '.$record->name.' a été modifié.']
-                : ['Nouvel utilisateur', 'Le compte de '.$record->name.' a été créé.'],
+            User::class => match ($this->event) {
+                'phone_updated' => ['Téléphone utilisateur modifié', 'Le téléphone de connexion de '.$record->name.' a été modifié.'],
+                'updated' => ['Utilisateur modifié', 'Le compte de '.$record->name.' a été modifié.'],
+                default => ['Nouvel utilisateur', 'Le compte de '.$record->name.' a été créé.'],
+            },
             ExchangeRate::class => match ($this->event) {
                 'activated' => ['Taux de change activé', '1 '.$record->from_currency.' = '.DecimalFormatter::rate($record->rate).' '.$record->to_currency.'. Les autres taux de cette paire ont été désactivés.'],
                 'deactivated' => ['Taux de change désactivé', 'Le taux '.$record->from_currency.' → '.$record->to_currency.' a été désactivé.'],

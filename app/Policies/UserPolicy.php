@@ -27,7 +27,7 @@ class UserPolicy
 
     public function update(User $user, User $record): bool
     {
-        return false;
+        return $this->create($user);
     }
 
     public function updatePhone(User $user, User $record): bool

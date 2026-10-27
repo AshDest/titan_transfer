@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Users\CreateUser;
+use App\Actions\Users\UpdateUser;
 use App\Actions\Users\UpdateUserPhone;
 use App\Enums\RecordStatus;
 use App\Enums\Role;
@@ -54,6 +55,27 @@ class UserController extends Controller
         Gate::authorize('updatePhone', $user);
 
         return view('users.phone', compact('user'));
+    }
+
+    public function edit(User $user): View
+    {
+        Gate::authorize('update', $user);
+        $user->load('roles');
+        $branches = Branch::where('status', RecordStatus::Active)->orderBy('name')->get();
+        $availableRoles = \Spatie\Permission\Models\Role::where('guard_name', 'web')->pluck('name');
+        $roles = array_filter(Role::cases(), fn (Role $role): bool => $availableRoles->contains($role->value));
+
+        return view('users.edit', compact('user', 'branches', 'roles'));
+    }
+
+    public function update(Request $request, User $user, UpdateUser $action): RedirectResponse
+    {
+        $action->handle($request->user(), $user, $request->all());
+        if ($request->user()->is($user)) {
+            $request->user()->refresh();
+        }
+
+        return redirect()->route('users.index')->with('status', 'Utilisateur modifié avec succès.');
     }
 
     public function updatePhone(Request $request, User $user, UpdateUserPhone $action): RedirectResponse
