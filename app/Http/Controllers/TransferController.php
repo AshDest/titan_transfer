@@ -30,6 +30,7 @@ class TransferController extends Controller
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::enum(TransferStatus::class)],
+            'awaiting_payout' => ['sometimes', 'boolean'],
             'date_from' => ['bail', 'nullable', 'string', 'date_format:Y-m-d'],
             'date_to' => ['bail', 'nullable', 'string', 'date_format:Y-m-d', ...($request->filled('date_from') ? ['after_or_equal:date_from'] : [])],
         ], [
@@ -40,9 +41,17 @@ class TransferController extends Controller
             'date_to.after_or_equal' => 'La date de fin doit être égale ou postérieure à la date de début.',
         ]);
         $timezone = $request->user()->branch?->timezone ?? 'UTC';
+        $awaitingPayout = $request->boolean('awaiting_payout');
+        if ($awaitingPayout) {
+            Gate::authorize('payAny', Transfer::class);
+        }
         $dateFrom = ! empty($filters['date_from']) ? CarbonImmutable::createFromFormat('!Y-m-d', $filters['date_from'], $timezone)->utc() : null;
         $dateUntil = ! empty($filters['date_to']) ? CarbonImmutable::createFromFormat('!Y-m-d', $filters['date_to'], $timezone)->addDay()->utc() : null;
         $query = Transfer::visibleTo($request->user())
+            ->when($awaitingPayout, fn ($query) => $query
+                ->whereIn('status', [TransferStatus::Approved, TransferStatus::ReadyForPayout])
+                ->whereHas('destinationBranch', fn ($branch) => $branch->where('status', RecordStatus::Active))
+                ->when(! $request->user()->canViewAllCashAccounts(), fn ($query) => $query->where('destination_branch_id', $request->user()->branch_id)))
             ->when($dateFrom, fn ($query) => $query->where('created_at', '>=', $dateFrom))
             ->when($dateUntil, fn ($query) => $query->where('created_at', '<', $dateUntil))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
@@ -50,7 +59,7 @@ class TransferController extends Controller
         $totals = $calculator->calculate($query);
         $records = $query->with(['sourceBranch', 'destinationBranch'])->latest('id')->paginate(15)->withQueryString();
 
-        return view('transfers.index', compact('records', 'totals', 'timezone'));
+        return view('transfers.index', compact('records', 'totals', 'timezone', 'awaitingPayout'));
     }
 
     public function create(Request $request): View

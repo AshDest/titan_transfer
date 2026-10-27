@@ -1,15 +1,16 @@
-<x-layouts.workspace title="Transferts">
-    <x-page-heading title="Transferts" description="Retrouvez les opérations de votre agence." :create="auth()->user()->can('transfers.create') ? 'transfers.create' : null" button="Nouvelle opération" />
+<x-layouts.workspace :title="$awaitingPayout ? 'Transferts à payer' : 'Transferts'">
+    <x-page-heading :title="$awaitingPayout ? 'Transferts à payer' : 'Transferts'" :create="auth()->user()->can('transfers.create') ? 'transfers.create' : null" button="Nouvelle opération" />
     @if($errors->any())<div class="notice page-notice" role="alert"><ul>@foreach($errors->all() as $message)<li>{{ $message }}</li>@endforeach</ul></div>@endif
     <p class="field-hint">Dates de création des transferts · {{ $timezone }} · Journées de début et de fin incluses.</p>
     <form method="GET" action="{{ route('transfers.index') }}" class="transfer-filters">
+        @if($awaitingPayout)<input type="hidden" name="awaiting_payout" value="1">@endif
         <x-field name="q" label="Référence" type="search" placeholder="Rechercher une référence…" maxlength="100" :value="request('q')" />
-        <x-field name="status" label="Statut"><option value="">Tous les statuts</option>@foreach(\App\Enums\TransferStatus::cases() as $status)<option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>@endforeach</x-field>
+        <x-field name="status" label="Statut"><option value="">Tous les statuts</option>@foreach(\App\Enums\TransferStatus::cases() as $status)@if(! $awaitingPayout || in_array($status, [\App\Enums\TransferStatus::Approved, \App\Enums\TransferStatus::ReadyForPayout]))<option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>@endif @endforeach</x-field>
         <x-field name="date_from" label="Date de début" type="date" :value="request('date_from')" />
         <x-field name="date_to" label="Date de fin" type="date" :value="request('date_to')" />
         <button class="secondary-button">Filtrer</button>
         @can('reviewAny', \App\Models\Transfer::class)<a class="text-button" href="{{ route('transfers.index', [...request()->only(['q', 'date_from', 'date_to']), 'status' => 'PENDING']) }}">À valider</a>@endcan
-        @if(request()->filled('q') || request()->filled('status') || request()->filled('date_from') || request()->filled('date_to'))<a class="text-button" href="{{ route('transfers.index') }}">Réinitialiser</a>@endif
+        @if(request()->filled('q') || request()->filled('status') || request()->filled('date_from') || request()->filled('date_to'))<a class="text-button" href="{{ route('transfers.index', $awaitingPayout ? ['awaiting_payout' => 1] : []) }}">Réinitialiser</a>@endif
     </form>
     <section class="branch-section transfer-totals" aria-labelledby="transfer-totals-title">
         <div class="section-heading"><div><h2 id="transfer-totals-title">Totaux des transferts filtrés</h2><p>{{ $records->total() }} transfert(s) · Toutes les pages · Montants par devise, selon les filtres sélectionnés.</p></div></div>
@@ -35,7 +36,11 @@
                     @percentage($transfer->fee_percentage) % @endif</small></td>
             <td>@money($transfer->payout_amount) {{ $transfer->destination_currency }}</td>
             <td><span class="pill">{{ $transfer->status->label() }}</span></td>
-            <td><x-action-link :href="route('transfers.show', $transfer)" icon="eye" label="Voir le transfert" /></td>
+            <td><div class="row-actions"><x-action-link :href="route('transfers.show', $transfer)" icon="eye" label="Voir le transfert" />
+                @if(in_array($transfer->status, [\App\Enums\TransferStatus::Approved, \App\Enums\TransferStatus::ReadyForPayout]))
+                    @can('pay', $transfer)<x-action-link :href="route('transfers.show', $transfer).'#payment-title'" icon="cash" label="Confirmer la remise des fonds" />@endcan
+                @endif
+            </div></td>
         </tr>@endforeach
     </x-listing>
 </x-layouts.workspace>

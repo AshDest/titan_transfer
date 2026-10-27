@@ -47,6 +47,7 @@
             <section class="review-decision" aria-labelledby="payment-title">
                 <h2 id="payment-title">Paiement au bénéficiaire</h2>
                 <p>@money($transfer->payout_amount) {{ $transfer->destination_currency }} · {{ $transfer->destinationBranch->name }}</p>
+                <p>La confirmation notifiera {{ $transfer->sourceBranch->name }}.</p>
                 <form method="POST" action="{{ route('transfers.pay', $transfer) }}" data-review-transfer>
                     @csrf
                     <label class="cash-confirmation"><input type="checkbox" name="confirmed" value="1" required> J’ai vérifié l’identité du bénéficiaire et lui ai remis le montant indiqué.</label>

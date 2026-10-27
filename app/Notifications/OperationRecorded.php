@@ -43,8 +43,10 @@ class OperationRecorded extends Notification
                 ? ['Caisse approvisionnée', DecimalFormatter::money($record->amount).' '.$record->currency.' reçus de '.$record->provider_name.' · '.$record->account->branch->name.'.']
                 : ['Sortie de caisse enregistrée', DecimalFormatter::money($record->amount).' '.$record->currency.' remis à '.$record->recipient_name.' · '.$record->account->branch->name.'.'],
             Transfer::class => match ($this->event) {
-                'paid' => ['Transfert payé', $record->reference.' : '.DecimalFormatter::money($record->payout_amount).' '.$record->destination_currency.' remis au bénéficiaire à '.$record->destinationBranch->name.'.'],
-                'approved' => ['Transfert approuvé', $record->reference.' a été validé et transmis à l’agence de retrait.'],
+                'paid' => ['Transfert payé', $this->actor->name.' a confirmé la remise de '.DecimalFormatter::money($record->payout_amount).' '.$record->destination_currency.' au bénéficiaire à '.$record->destinationBranch->name.' · '.$record->reference.' · Départ : '.$record->sourceBranch->name.'.'],
+                'approved' => $notifiable instanceof User && $notifiable->branch_id === $record->destination_branch_id && $notifiable->can('pay', $record)
+                    ? ['Transfert à payer', $record->reference.' reçu de '.$record->sourceBranch->name.' : '.DecimalFormatter::money($record->payout_amount).' '.$record->destination_currency.' à remettre au bénéficiaire. Ouvrez le transfert pour confirmer le paiement.']
+                    : ['Transfert approuvé', $record->reference.' a été validé et transmis à '.$record->destinationBranch->name.'.'],
                 'rejected' => ['Transfert rejeté', $record->reference.' a été rejeté. Consultez le motif dans le détail du transfert.'],
                 default => ['Transfert enregistré', $record->reference.' : '.DecimalFormatter::money($record->amount_received).' '.$record->source_currency.' encaissés. En attente de validation.'],
             },

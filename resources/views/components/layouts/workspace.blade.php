@@ -9,6 +9,7 @@
                 <div class="sidebar-label">OPÉRATIONS</div>
                 <x-nav-link route="dashboard" icon="grid">Vue d’ensemble</x-nav-link>
                 @can('reviewAny', \App\Models\Transfer::class)<a href="{{ route('transfers.index', ['status' => 'PENDING']) }}" class="nav-link"><x-icon name="check" /><span>Transferts à valider</span></a>@endcan
+                @can('payAny', \App\Models\Transfer::class)<a href="{{ route('transfers.index', ['awaiting_payout' => 1]) }}" class="nav-link"><x-icon name="cash" /><span>Transferts à payer</span></a>@endcan
                 @can('transfers.view')<x-nav-link route="transfers.index" icon="arrow">Transferts</x-nav-link>@endcan
                 @can('customers.view')<x-nav-link route="customers.index" icon="users">Clients</x-nav-link>@endcan
                 @can('beneficiaries.view')<x-nav-link route="beneficiaries.index" icon="users">Bénéficiaires</x-nav-link>@endcan

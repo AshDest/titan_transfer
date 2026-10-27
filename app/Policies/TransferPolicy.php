@@ -43,11 +43,16 @@ class TransferPolicy
         return $this->canReview($user, $transfer) && $user->can('transfers.reject');
     }
 
+    public function payAny(User $user): bool
+    {
+        return $user->canAccessApplication() && $user->can('transfers.pay') && $this->viewAny($user)
+            && ! $user->hasRole(Role::SourceCashier->value)
+            && $user->hasAnyRole([Role::Administrator->value, Role::DestinationCashier->value]);
+    }
+
     public function pay(User $user, Transfer $transfer): bool
     {
-        return $user->canAccessApplication() && $user->can('transfers.pay') && $this->view($user, $transfer)
-            && ! $user->hasRole(Role::SourceCashier->value)
-            && $user->hasAnyRole([Role::Administrator->value, Role::DestinationCashier->value])
+        return $this->payAny($user) && $this->view($user, $transfer)
             && ($user->canViewAllCashAccounts() || $user->branch_id === $transfer->destination_branch_id)
             && $transfer->destinationBranch->status === RecordStatus::Active;
     }
