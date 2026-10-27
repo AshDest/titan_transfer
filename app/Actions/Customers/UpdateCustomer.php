@@ -23,6 +23,7 @@ final class UpdateCustomer
             'email' => ['nullable', 'email', 'max:255'],
             'status' => ['required', Rule::enum(RecordStatus::class)],
         ], ['status.enum' => 'Sélectionnez un statut valide.'])->validate();
+        $data = PersonRules::nameAttributes($data);
 
         return DB::transaction(function () use ($actor, $customer, $data): Customer {
             $customer = Customer::whereKey($customer->id)->lockForUpdate()->firstOrFail();

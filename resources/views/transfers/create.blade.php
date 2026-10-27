@@ -39,10 +39,8 @@
                     <fieldset data-party-new @disabled($mode !== 'new') @if($mode !== 'new') hidden @endif>
                         <legend class="sr-only">{{ $labels[3] }}</legend>
                         <div class="form-grid">
-                            <x-field :name="$party.'.first_name'" label="Prénom" required maxlength="100" />
-                            <x-field :name="$party.'.last_name'" label="Nom" maxlength="100" />
+                            <x-person-name :prefix="$party" />
                             <x-field :name="$party.'.phone'" label="Téléphone" type="tel" required maxlength="32" placeholder="+243… / +971…" />
-                            <x-field :name="$party.'.country'" label="Pays" required maxlength="100" />
                         </div>
                         <details class="party-details" @if($errors->has($party.'.id_type') || $errors->has($party.'.id_number')) open @endif><summary>Informations complémentaires</summary><div class="form-grid">
                             <x-field :name="$party.'.city'" label="Ville" maxlength="100" />

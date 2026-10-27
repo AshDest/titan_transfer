@@ -22,6 +22,7 @@ final class RegisterCustomer
             ...PersonRules::registration(),
             'email' => ['nullable', 'email', 'max:255'],
         ])->validate();
+        $data = PersonRules::nameAttributes($data);
 
         return DB::transaction(function () use ($actor, $branch, $data): Customer {
             $customer = new Customer($data);

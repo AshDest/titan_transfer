@@ -15,8 +15,7 @@
                 <option value="">Choisir une agence</option>
                 @foreach($branches as $branch)<option value="{{ $branch->id }}" @selected(old('branch_id', $customer?->branch_id ?? auth()->user()->branch_id) == $branch->id)>{{ $branch->name }}</option>@endforeach
             </x-field>
-            <x-field name="first_name" label="Prénom" required maxlength="100" autocomplete="given-name" />
-            <x-field name="last_name" label="Nom" maxlength="100" autocomplete="family-name" />
+            <x-person-name />
             <x-field name="phone" label="Téléphone" type="tel" required maxlength="32" placeholder="+243…" autocomplete="tel" />
             
             <x-field name="country" label="Pays" required maxlength="100" />

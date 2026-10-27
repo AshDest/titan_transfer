@@ -26,6 +26,7 @@ final class RegisterBeneficiary
             'customer_id' => ['nullable', 'integer', Rule::exists(Customer::class, 'id')
                 ->where('branch_id', $branch->id)->where('status', RecordStatus::Active->value)],
         ])->validate();
+        $data = PersonRules::nameAttributes($data);
 
         return DB::transaction(function () use ($actor, $branch, $data): Beneficiary {
             $beneficiary = new Beneficiary(collect($data)->except('customer_id')->all());

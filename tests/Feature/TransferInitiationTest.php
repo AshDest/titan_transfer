@@ -414,6 +414,51 @@ class TransferInitiationTest extends TestCase
         return ['omitted' => [[]], 'empty' => [['last_name' => '']], 'null' => [['last_name' => null]]];
     }
 
+    #[DataProvider('automaticCountries')]
+    public function test_new_parties_get_their_countries_from_the_transfer_agencies(array $country): void
+    {
+        $this->cashier->branch->update(['country' => 'RDC']);
+        $this->destination->update(['country' => 'Émirats arabes unis']);
+        $input = $this->input();
+        foreach (['sender', 'beneficiary'] as $party) {
+            unset($input[$party]['country']);
+            $input[$party] = [...$input[$party], ...$country];
+        }
+        $this->actingAs($this->cashier)->get(route('transfers.create'))->assertOk()
+            ->assertDontSee('name="sender[country]"', false)->assertDontSee('name="beneficiary[country]"', false);
+        $preview = $this->post(route('transfers.preview'), $input)->assertOk();
+        $this->assertSame('RDC', $preview->viewData('snapshot')['sender']['country']);
+        $this->assertSame('Émirats arabes unis', $preview->viewData('snapshot')['beneficiary']['country']);
+        $this->post(route('transfers.store'), ['review_token' => $preview->viewData('token'), 'cash_received' => '1'])->assertSessionHasNoErrors();
+        $this->assertSame('RDC', Customer::sole()->country);
+        $this->assertSame('Émirats arabes unis', Beneficiary::sole()->country);
+        $this->assertSame($this->cashier->branch_id, Beneficiary::sole()->branch_id);
+        $transfer = Transfer::sole();
+        $this->assertSame('RDC', $transfer->parties_snapshot['sender']['country']);
+        $this->assertSame('Émirats arabes unis', $transfer->parties_snapshot['beneficiary']['country']);
+        $this->get(route('transfers.show', $transfer))->assertOk()->assertSee('RDC')->assertSee('Émirats arabes unis');
+    }
+
+    public static function automaticCountries(): array
+    {
+        return ['omitted' => [[]], 'empty' => [['country' => '']], 'ignored submitted country' => [['country' => 'Pays incorrect']]];
+    }
+
+    public function test_existing_people_keep_their_recorded_country(): void
+    {
+        $sender = Customer::factory()->create(['branch_id' => $this->cashier->branch_id, 'country' => 'France']);
+        $beneficiary = Beneficiary::factory()->create(['branch_id' => $this->cashier->branch_id, 'customer_id' => $sender->id, 'country' => 'Oman']);
+        $input = [...$this->input(), 'sender_mode' => 'existing', 'sender_id' => $sender->id,
+            'beneficiary_mode' => 'existing', 'beneficiary_id' => $beneficiary->id];
+        unset($input['sender'], $input['beneficiary']);
+        $preview = $this->actingAs($this->cashier)->post(route('transfers.preview'), $input)->assertOk();
+        $this->assertSame('France', $preview->viewData('snapshot')['sender']['country']);
+        $this->assertSame('Oman', $preview->viewData('snapshot')['beneficiary']['country']);
+        $this->post(route('transfers.store'), ['review_token' => $preview->viewData('token'), 'cash_received' => '1'])->assertSessionHasNoErrors();
+        $this->assertSame('France', $sender->refresh()->country);
+        $this->assertSame('Oman', $beneficiary->refresh()->country);
+    }
+
     public function test_validation_errors_and_party_inputs_are_visible_on_form(): void
     {
         $data = $this->input();

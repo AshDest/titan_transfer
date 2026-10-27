@@ -32,10 +32,15 @@ final class TransferInput
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
         foreach (['sender', 'beneficiary'] as $party) {
-            $rules[$party] = ['exclude_unless:'.$party.'_mode,new', 'required', 'array:first_name,last_name,phone,country,city,address,id_type,id_number'];
+            $rules[$party] = ['exclude_unless:'.$party.'_mode,new', 'required', 'array:full_name,first_name,last_name,phone,country,city,address,id_type,id_number'];
             foreach (PersonRules::registration() as $field => $fieldRules) {
+                if ($field === 'country') {
+                    $rules[$party.'.'.$field] = ['exclude'];
+
+                    continue;
+                }
                 $rules[$party.'.'.$field] = ['exclude_unless:'.$party.'_mode,new', ...array_map(
-                    fn (string $rule): string => str_replace('required_with:', 'required_with:'.$party.'.', $rule), $fieldRules)];
+                    fn (string $rule): string => str_replace(['required_with:', 'exclude_with:'], ['required_with:'.$party.'.', 'exclude_with:'.$party.'.'], $rule), $fieldRules)];
             }
         }
         $data = Validator::make($input, $rules)->validate();
@@ -53,6 +58,7 @@ final class TransferInput
         $sender = null;
         if ($data['sender_mode'] === 'new') {
             Gate::forUser($actor)->authorize('create', [Customer::class, $source]);
+            $data['sender']['country'] = $source->country;
         } else {
             $sender = Customer::where('branch_id', $source->id)->where('status', RecordStatus::Active)->find($data['sender_id']);
             if (! $sender) {
@@ -62,6 +68,7 @@ final class TransferInput
         $beneficiary = null;
         if ($data['beneficiary_mode'] === 'new') {
             Gate::forUser($actor)->authorize('create', [Beneficiary::class, $source]);
+            $data['beneficiary']['country'] = $destination->country;
         } else {
             $beneficiary = Beneficiary::where('branch_id', $source->id)->where('status', RecordStatus::Active)
                 ->where(fn ($query) => $query->whereNull('customer_id')->when($sender, fn ($q) => $q->orWhere('customer_id', $sender->id)))

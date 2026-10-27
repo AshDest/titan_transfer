@@ -15,6 +15,7 @@ use App\Models\TransferEvent;
 use App\Models\User;
 use App\Services\OperationNotifications;
 use App\Services\TransferPricing;
+use App\Validation\PersonRules;
 use App\Validation\TransferInput;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,7 @@ final class CreateTransfer
         $snapshot = [];
         foreach (['sender', 'beneficiary'] as $party) {
             $snapshot[$party] = $prepared[$party]?->only(['first_name', 'last_name', 'phone', 'country', 'city'])
-                ?? collect($prepared['data'][$party])->only(['first_name', 'last_name', 'phone', 'country', 'city'])->all();
+                ?? collect(PersonRules::nameAttributes($prepared['data'][$party]))->only(['first_name', 'last_name', 'phone', 'country', 'city'])->all();
         }
         $fingerprint = hash('sha256', json_encode([
             $pricing['quote']->attributes(), $pricing['rate']?->id, $pricing['fee']->id,
