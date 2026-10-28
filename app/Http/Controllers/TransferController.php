@@ -59,9 +59,22 @@ class TransferController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->when($request->filled('q'), fn ($query) => $query->where('reference', 'like', '%'.$request->string('q').'%'));
         $totals = $calculator->calculate($query);
-        $records = $query->with(['sourceBranch', 'destinationBranch'])->latest('id')->paginate(15)->withQueryString();
+        $records = $query->with(['sourceBranch', 'destinationBranch', 'paidBy'])->latest('id')->paginate(15)->withQueryString();
+        $paymentAvailability = [];
+        if (Gate::allows('payAny', Transfer::class)) {
+            $accounts = CashAccount::visibleTo($request->user())->whereIn('branch_id', $records->pluck('destination_branch_id'))
+                ->get()->keyBy(fn (CashAccount $account): string => $account->branch_id.'|'.$account->currency);
+            foreach ($records as $transfer) {
+                $account = $accounts->get($transfer->destination_branch_id.'|'.$transfer->destination_currency);
+                $paymentAvailability[$transfer->id] = [
+                    'balance' => $account?->balance ?? '0.00',
+                    'can_pay' => $account?->status === RecordStatus::Active
+                        && BigDecimal::of($account->balance)->isGreaterThanOrEqualTo($transfer->payout_amount),
+                ];
+            }
+        }
 
-        return view('transfers.index', compact('records', 'totals', 'timezone', 'awaitingPayout'));
+        return view('transfers.index', compact('records', 'totals', 'timezone', 'awaitingPayout', 'paymentAvailability'));
     }
 
     public function create(Request $request): View

@@ -359,3 +359,9 @@ a.treasury-reference:hover{text-decoration:underline}
 .fee-mode-hint{margin:0 0 24px}
 .treasury-heading-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .page-heading .treasury-heading-actions .compact-button{width:auto}
+.payment-dialog{width:min(480px,calc(100vw - 32px));max-height:calc(100svh - 32px);margin:auto;padding:28px;border:1px solid var(--line);border-radius:16px;color:var(--ink);background:#fff;font-size:14px;line-height:1.6;white-space:normal;overflow-wrap:anywhere;box-shadow:0 20px 60px #21213933}
+.payment-dialog::backdrop{background:#21213999}
+.payment-dialog h2{font-size:22px;margin:0 0 12px}
+.payment-dialog .payment-dialog-amount{font-size:28px;font-weight:700;margin:18px 0}
+.action-icon:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:450px){.payment-dialog{padding:22px}.payment-dialog .form-actions{flex-direction:column-reverse}.payment-dialog .form-actions>*{width:100%}}

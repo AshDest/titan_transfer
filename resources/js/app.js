@@ -244,16 +244,16 @@ if (notificationMenu) {
     timer = setTimeout(refreshNotifications, 20000);
 }
 
-document.querySelectorAll('[data-review-transfer]').forEach(reviewForm => {
+document.querySelectorAll('[data-review-transfer], [data-payment-form]').forEach(reviewForm => {
     reviewForm.addEventListener('submit', () => {
-        const button = reviewForm.querySelector('button');
+        const button = reviewForm.querySelector('button[type="submit"], button:not([type])');
         button.dataset.originalLabel = button.textContent;
         button.disabled = true;
         button.textContent = 'Enregistrement…';
     });
 });
 window.addEventListener('pageshow', () => {
-    document.querySelectorAll('[data-review-transfer] button').forEach(button => {
+    document.querySelectorAll('[data-review-transfer] button, [data-payment-form] button[type="submit"]').forEach(button => {
         if (button.dataset.originalLabel) {
             button.disabled = false;
             button.textContent = button.dataset.originalLabel;
@@ -304,3 +304,13 @@ if (fundingForm) {
         fundingForm.querySelector('[name="currency"]').value = branch.selectedOptions[0]?.dataset.currency ?? '';
     });
 }
+document.querySelectorAll('[data-payment-dialog]').forEach(button => {
+    button.addEventListener('click', () => {
+        const dialog = document.getElementById(button.dataset.paymentDialog);
+        dialog.querySelector('form').reset();
+        dialog.showModal();
+    });
+});
+document.querySelectorAll('[data-close-payment-dialog]').forEach(button => {
+    button.addEventListener('click', () => button.closest('dialog').close());
+});
