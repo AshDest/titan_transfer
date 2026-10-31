@@ -51,8 +51,8 @@ final class RecordTransferFeeRule
                 throw ValidationException::withMessages(['maximum_amount' => 'Une tranche de frais fixes en USD doit se terminer au plus à 1 000,00 USD.']);
             }
             if ($data['fee_type'] === FeeType::Percentage->value
-                && BigDecimal::of($data['minimum_amount'] ?? '0')->isLessThanOrEqualTo('1000.00')) {
-                throw ValidationException::withMessages(['minimum_amount' => 'En USD, le pourcentage commence à partir de 1 000,01 USD.']);
+                && BigDecimal::of($data['minimum_amount'] ?? '0')->isLessThan('1000.00')) {
+                throw ValidationException::withMessages(['minimum_amount' => 'En USD, le pourcentage commence à partir de 1 000,00 USD.']);
             }
         }
 

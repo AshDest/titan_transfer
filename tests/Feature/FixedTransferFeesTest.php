@@ -30,14 +30,14 @@ class FixedTransferFeesTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
     }
 
-    public function test_admin_can_create_any_number_of_fixed_tiers_and_percentage_above_1000(): void
+    public function test_admin_can_create_any_number_of_fixed_tiers_and_percentage_from_1000(): void
     {
         $admin = $this->admin();
         $this->actingAs($admin);
-        foreach ([['0', '50', '1'], ['50.01', '100', '2'], ['100.01', '250', '5'], ['250.01', '500', '8'], ['500.01', '1000', '10']] as [$min, $max, $fee]) {
+        foreach ([['0', '50', '1'], ['50.01', '100', '2'], ['100.01', '250', '5'], ['250.01', '500', '8'], ['500.01', '999.99', '10']] as [$min, $max, $fee]) {
             $this->post(route('fee-rules.store'), $this->ruleInput(['minimum_amount' => $min, 'maximum_amount' => $max, 'fixed_amount' => $fee]))->assertSessionHasNoErrors();
         }
-        $this->post(route('fee-rules.store'), $this->ruleInput(['fee_type' => 'percentage', 'percentage' => '2.5123', 'minimum_amount' => '1000.01', 'maximum_amount' => null]))->assertSessionHasNoErrors();
+        $this->post(route('fee-rules.store'), $this->ruleInput(['fee_type' => 'percentage', 'percentage' => '2.5123', 'minimum_amount' => '1000.00', 'maximum_amount' => null]))->assertSessionHasNoErrors();
         $this->assertDatabaseCount('transfer_fee_rules', 6);
         $first = TransferFeeRule::first();
         $this->assertSame(FeeType::Fixed, $first->fee_type);
@@ -72,7 +72,7 @@ class FixedTransferFeesTest extends TestCase
             'unbounded fixed fee' => [['maximum_amount' => null], 'maximum_amount'],
             'fixed above threshold' => [['maximum_amount' => '1000.01'], 'maximum_amount'],
             'percentage below threshold' => [['fee_type' => 'percentage', 'percentage' => '2', 'minimum_amount' => '999', 'maximum_amount' => null], 'minimum_amount'],
-            'percentage at threshold' => [['fee_type' => 'percentage', 'percentage' => '2', 'minimum_amount' => '1000', 'maximum_amount' => null], 'minimum_amount'],
+            'percentage one cent below threshold' => [['fee_type' => 'percentage', 'percentage' => '2', 'minimum_amount' => '999.99', 'maximum_amount' => null], 'minimum_amount'],
             'reversed tier' => [['minimum_amount' => '500', 'maximum_amount' => '100'], 'maximum_amount'],
         ];
     }
@@ -93,6 +93,72 @@ class FixedTransferFeesTest extends TestCase
     {
         return [['50', '5.00', FeeType::Fixed], ['100', '5.00', FeeType::Fixed], ['100.01', '15.00', FeeType::Fixed],
             ['1000', '15.00', FeeType::Fixed], ['1000.01', '20.00', FeeType::Percentage], ['2000', '40.00', FeeType::Percentage]];
+    }
+
+    #[DataProvider('percentageThresholds')]
+    public function test_transfer_of_exactly_1000_can_be_previewed_and_recorded_with_percentage_fees(string $minimum): void
+    {
+        [$source, $destination] = $this->corridor();
+        TransferFeeRule::factory()->fixed('15')->create(['maximum_amount' => '999.99']);
+        $this->actingAs($this->admin())->post(route('fee-rules.store'), $this->ruleInput([
+            'fee_type' => 'percentage', 'percentage' => '2', 'minimum_amount' => $minimum, 'maximum_amount' => null,
+        ]))->assertSessionHasNoErrors();
+        $rule = TransferFeeRule::latest('id')->firstOrFail();
+        foreach (['1000', '1000.00', '1000.01', '2000'] as $amount) {
+            $price = app(TransferPricing::class)->quote($source, $destination, $amount);
+            $this->assertSame($rule->id, $price['fee']->id);
+            $this->assertSame(FeeType::Percentage, $price['quote']->feeType);
+        }
+        $this->assertSame('15.00', app(TransferPricing::class)->quote($source, $destination, '999.99')['quote']->feeAmount);
+        $preview = $this->post(route('transfers.preview'), [...$this->transferInput($source, $destination), 'amount_received' => '1000'])->assertOk();
+        $this->assertSame('20.00', $preview->viewData('quote')->feeAmount);
+        $this->post(route('transfers.store'), ['review_token' => $preview->viewData('token'), 'cash_received' => '1'])->assertSessionHasNoErrors();
+        $transfer = Transfer::sole();
+        $this->assertSame($rule->id, $transfer->transfer_fee_rule_id);
+        $this->assertSame(FeeType::Percentage, $transfer->fee_type);
+        $this->assertSame('20.00', $transfer->fee_amount);
+        $this->assertSame('980.00', $transfer->net_amount);
+        $this->assertSame('3596.60', $transfer->payout_amount);
+        $this->assertSame('1000.00', CashAccount::sole()->balance);
+        $this->assertSame($minimum, $rule->refresh()->minimum_amount);
+    }
+
+    public static function percentageThresholds(): array
+    {
+        return ['inclusive threshold' => ['1000.00'], 'legacy threshold' => ['1000.01']];
+    }
+
+    #[DataProvider('unavailableThresholdRules')]
+    public function test_legacy_threshold_does_not_bypass_unavailable_or_conflicting_rules(array $changes): void
+    {
+        [$source, $destination] = $this->corridor();
+        TransferFeeRule::factory()->create(['minimum_amount' => '1000.01']);
+        TransferFeeRule::factory()->create([
+            'source_branch_id' => $source->id, 'destination_branch_id' => $destination->id,
+            'minimum_amount' => '1000.01', ...$changes,
+        ]);
+        $this->expectException(ValidationException::class);
+        app(TransferPricing::class)->quote($source, $destination, '1000');
+    }
+
+    public static function unavailableThresholdRules(): array
+    {
+        return [
+            'disabled specific legacy rule' => [['active' => false]],
+            'removed specific legacy rule' => [['deleted_at' => '2026-10-22 10:00:00']],
+            'disabled exact tier' => [['minimum_amount' => '1000.00', 'active' => false]],
+            'removed exact tier' => [['minimum_amount' => '1000.00', 'deleted_at' => '2026-10-22 10:00:00']],
+            'conflicting legacy tiers' => [['source_branch_id' => null, 'destination_branch_id' => null, 'maximum_amount' => '2000']],
+        ];
+    }
+
+    public function test_legacy_threshold_adjustment_does_not_apply_to_other_currencies(): void
+    {
+        $source = Branch::factory()->create(['default_currency' => 'CDF']);
+        $destination = Branch::factory()->create(['default_currency' => 'CDF']);
+        TransferFeeRule::factory()->create(['source_currency' => 'CDF', 'minimum_amount' => '1000.01']);
+        $this->expectException(ValidationException::class);
+        app(TransferPricing::class)->quote($source, $destination, '1000');
     }
 
     public function test_fixed_fee_snapshot_is_saved_and_receipts_stay_correct_after_tariff_changes(): void

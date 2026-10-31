@@ -31,15 +31,21 @@ final class TransferPricing
         }
         $amountValue = BigDecimal::of($amount);
         /** Keep removed versions until version selection to prevent reviving an older tariff. */
-        $rules = TransferFeeRule::query()->where('source_currency', $source->default_currency)
+        $versions = TransferFeeRule::query()->where('source_currency', $source->default_currency)
             ->where(fn ($query) => $query->whereNull('source_branch_id')->orWhere('source_branch_id', $source->id))
             ->where(fn ($query) => $query->whereNull('destination_branch_id')->orWhere('destination_branch_id', $destination->id))
             ->where(fn ($query) => $query->whereNull('effective_from')->orWhere('effective_from', '<=', $at))
             ->where(fn ($query) => $query->whereNull('effective_until')->orWhere('effective_until', '>', $at))
             ->orderByRaw('CASE WHEN effective_from IS NULL THEN 1 ELSE 0 END')->orderByDesc('effective_from')->orderByDesc('id')->get()
-            ->unique(fn ($rule) => implode('|', [$rule->source_branch_id, $rule->destination_branch_id, $rule->minimum_amount ?? '0.00', $rule->maximum_amount ?? '*']))
+            ->unique(fn ($rule) => implode('|', [$rule->source_branch_id, $rule->destination_branch_id, $rule->minimum_amount ?? '0.00', $rule->maximum_amount ?? '*']));
+        $rules = $versions
             ->filter(fn ($rule) => $amountValue->isGreaterThanOrEqualTo($rule->minimum_amount ?? '0')
                 && ($rule->maximum_amount === null || $amountValue->isLessThanOrEqualTo($rule->maximum_amount)));
+        /** Bridge the former USD threshold only when no configured tier covers 1,000, including disabled or removed versions. */
+        if ($rules->isEmpty() && $source->default_currency === 'USD' && $amountValue->isEqualTo('1000.00')) {
+            $rules = $versions->filter(fn ($rule) => $rule->fee_type === FeeType::Percentage
+                && $rule->minimum_amount === '1000.01');
+        }
         $specificity = fn ($rule): int => (int) ($rule->source_branch_id !== null) + (int) ($rule->destination_branch_id !== null);
         $rank = $rules->max($specificity);
         $matches = $rules->filter(fn ($rule) => $specificity($rule) === $rank && $rule->active && $rule->deleted_at === null);

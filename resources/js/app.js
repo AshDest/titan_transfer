@@ -277,11 +277,11 @@ if (feeRuleForm) {
         });
         if (updateBounds && currency.value === 'USD') {
             if (mode.value === 'percentage') {
-                if (!minimum.value || Number(minimum.value) <= 1000) minimum.value = '1000.01';
-                if (maximum.value && Number(maximum.value) <= 1000) maximum.value = '';
+                if (!minimum.value || Number(minimum.value) < 1000) minimum.value = '1000.00';
+                if (maximum.value && Number(maximum.value) < 1000) maximum.value = '';
             } else {
-                if (Number(minimum.value) > 1000) minimum.value = '0.00';
-                if (!maximum.value || Number(maximum.value) > 1000) maximum.value = '1000.00';
+                if (Number(minimum.value) >= 1000) minimum.value = '0.00';
+                if (!maximum.value || Number(maximum.value) >= 1000) maximum.value = '999.99';
             }
         }
     };
