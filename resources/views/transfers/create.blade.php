@@ -59,10 +59,14 @@
                 <div class="transfer-currency"><span>Devise d’encaissement</span><strong data-source-currency>—</strong></div>
             </div>
             <div class="form-grid">
-                <x-field name="fee_mode" label="Frais de transfert" required data-transfer-fee-mode>
-                    <option value="configured" @selected(old('fee_mode', 'configured') === 'configured')>Frais configurés</option>
-                    <option value="custom_percentage" @selected(old('fee_mode') === 'custom_percentage')>Pourcentage personnalisé</option>
-                </x-field>
+                <fieldset>
+                    <legend class="search-label">Frais de transfert</legend>
+                    <div class="party-modes">
+                        <label><input type="radio" name="fee_mode" value="configured" data-transfer-fee-mode required @checked(old('fee_mode', 'configured') === 'configured')> Frais configurés</label>
+                        <label><input type="radio" name="fee_mode" value="custom_percentage" data-transfer-fee-mode required @checked(old('fee_mode') === 'custom_percentage')> Pourcentage personnalisé</label>
+                    </div>
+                    @error('fee_mode')<p class="field-error" role="alert">{{ $message }}</p>@enderror
+                </fieldset>
                 <fieldset data-custom-transfer-fee @disabled(old('fee_mode', 'configured') !== 'custom_percentage') @if(old('fee_mode', 'configured') !== 'custom_percentage') hidden @endif>
                     <legend class="sr-only">Frais personnalisés</legend>
                     <x-field name="custom_fee_percentage" label="Pourcentage (%)" required inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,4})?" placeholder="Ex. 2 ou 0" hint="Remplace les frais configurés. 0 = sans frais." />

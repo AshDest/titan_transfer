@@ -138,14 +138,14 @@ if (transferForm) {
     });
     updateSource();
     window.addEventListener('pageshow', updateSource);
-    const feeMode = transferForm.querySelector('[data-transfer-fee-mode]');
+    const feeModes = transferForm.querySelectorAll('[data-transfer-fee-mode]');
     const customFee = transferForm.querySelector('[data-custom-transfer-fee]');
     const updateTransferFee = () => {
-        const custom = feeMode.value === 'custom_percentage';
+        const custom = transferForm.querySelector('[data-transfer-fee-mode]:checked')?.value === 'custom_percentage';
         customFee.hidden = !custom;
         customFee.disabled = !custom;
     };
-    feeMode.addEventListener('change', updateTransferFee);
+    feeModes.forEach(radio => radio.addEventListener('change', updateTransferFee));
     window.addEventListener('pageshow', updateTransferFee);
     updateTransferFee();
 }
