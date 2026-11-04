@@ -48,6 +48,7 @@ Route::middleware(['auth', 'auth.session'])->group(function (): void {
         Route::post('/transfers/revise', [TransferController::class, 'revise'])->name('transfers.revise');
         Route::post('/transfers/{transfer}/approve', [TransferReviewController::class, 'approve'])->name('transfers.approve');
         Route::post('/transfers/{transfer}/reject', [TransferReviewController::class, 'reject'])->name('transfers.reject');
+        Route::post('/transfers/{transfer}/cancel', [TransferReviewController::class, 'cancel'])->name('transfers.cancel');
         Route::post('/transfers/{transfer}/pay', [TransferPaymentController::class, 'store'])->name('transfers.pay');
         Route::resource('transfers', TransferController::class)->only(['index', 'create', 'store', 'show']);
         Route::resource('customers', CustomerController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);

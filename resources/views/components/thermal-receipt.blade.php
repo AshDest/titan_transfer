@@ -26,9 +26,11 @@
         <div class="thermal-payout"><dt>{{ $transfer->status === \App\Enums\TransferStatus::Paid ? 'Montant remis' : 'À retirer' }}</dt><dd>@money($transfer->payout_amount) {{ $transfer->destination_currency }}</dd></div>
     </dl>
     <footer class="thermal-footer">
+        @if($transfer->transfer_fee_rule_id === null)<p>Frais personnalisés : @percentage($transfer->fee_percentage) %</p>@endif
         <p><b>{{ $transfer->status->label() }}</b></p>
         @if($transfer->status === \App\Enums\TransferStatus::Pending)<p>Fonds disponibles après validation du transfert.</p>@endif
         @if($transfer->status === \App\Enums\TransferStatus::Rejected)<p>Transfert rejeté. Contactez l’agence de départ pour le remboursement.</p>@endif
+        @if($transfer->status === \App\Enums\TransferStatus::Cancelled)<p>Transfert annulé. Retrait bloqué. Contactez l’agence de départ pour le remboursement.</p>@endif
         <p>Conservez ce reçu. Merci de votre confiance.</p>
     </footer>
 </article>

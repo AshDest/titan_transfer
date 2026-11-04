@@ -130,7 +130,7 @@ class OperationNotificationsTest extends TestCase
         $this->actingAs($this->cashier)->get(route('dashboard'))->assertOk()->assertSee('Notifications : 1 non lues');
         $response = $this->getJson(route('notifications.feed'))->assertOk()->assertJsonPath('unread_count', 1)->assertSee($transfer->reference);
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
-        $this->get(route('notifications.index'))->assertOk()->assertSee('Transfert enregistré')->assertSee($transfer->reference);
+        $this->get(route('notifications.index'))->assertOk()->assertSee('Transfert validé')->assertSee($transfer->reference);
         $stranger = User::factory()->for(Branch::factory())->create()->assignRole(Role::SourceCashier->value);
         $this->actingAs($stranger)->getJson(route('notifications.feed'))->assertJsonPath('unread_count', 0)->assertDontSee($transfer->reference);
     }

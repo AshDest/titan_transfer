@@ -155,7 +155,7 @@ class TransferController extends Controller
         }
 
         return redirect()->route('transfers.show', $transfer)
-            ->with('status', 'Opération enregistrée. Le transfert est en attente de validation.')
+            ->with('status', 'Opération validée. Le transfert est disponible au retrait.')
             ->with('print_transfer', $transfer->uuid);
     }
 

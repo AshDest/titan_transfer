@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Transfers\CancelTransfer;
 use App\Actions\Transfers\ReviewTransfer;
 use App\Enums\TransferStatus;
 use App\Models\Transfer;
@@ -11,6 +12,13 @@ use Illuminate\Support\Facades\Gate;
 
 class TransferReviewController extends Controller
 {
+    public function cancel(Request $request, Transfer $transfer, CancelTransfer $action): RedirectResponse
+    {
+        $action->handle($request->user(), $transfer, $request->all(), $request->ip());
+
+        return redirect()->route('transfers.show', $transfer)->with('status', 'Transfert annulé. Le dépôt reste en caisse jusqu’au remboursement effectif du client.');
+    }
+
     public function approve(Request $request, Transfer $transfer, ReviewTransfer $action): RedirectResponse
     {
         Gate::authorize('approve', $transfer);

@@ -45,7 +45,7 @@ class FixedTransferFeesTest extends TestCase
         $this->assertSame('0.0000', $first->percentage);
         $this->assertSame($admin->id, $first->created_by);
         $this->assertSame(6, $admin->notifications()->count());
-        $this->assertStringContainsString('montant fixe', $admin->notifications()->oldest()->first()->data['message']);
+        $this->assertStringContainsString('montant fixe', $admin->notifications()->where('subject_type', $first->getMorphClass())->where('subject_id', $first->id)->sole()->data['message']);
         $last = TransferFeeRule::latest('id')->first();
         $this->assertNull($last->fixed_amount);
         $this->assertSame('2.5123', $last->percentage);

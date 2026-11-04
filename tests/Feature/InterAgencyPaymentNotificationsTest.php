@@ -57,14 +57,9 @@ class InterAgencyPaymentNotificationsTest extends TestCase
 
     public function test_dubai_opens_its_alert_confirms_payment_and_goma_receives_confirmation_once(): void
     {
-        $incoming = $this->dubai->notifications()->sole();
-        $this->assertSame('Nouveau transfert reçu', $incoming->data['title']);
-        $this->actingAs($this->dubai)->get(route('notifications.feed'))->assertJsonPath('unread_count', 1);
-        $this->post(route('notifications.open', $incoming->id))->assertRedirect(route('transfers.show', $this->transfer));
-        $this->get(route('transfers.show', $this->transfer))->assertOk()->assertDontSee('Confirmer le paiement');
-        $this->post(route('transfers.pay', $this->transfer), ['confirmed' => '1'])->assertSessionHasErrors('payment');
-        $this->approve();
-        $alert = $this->dubai->notifications()->get()->first(fn ($notification) => $notification->data['event'] === 'approved');
+        $alert = $this->dubai->notifications()->sole();
+        $this->assertSame(TransferStatus::Approved, $this->transfer->status);
+        $this->assertSame($this->goma->id, $this->transfer->approved_by);
         $this->assertSame('Transfert à payer', $alert->data['title']);
         $this->assertStringContainsString('Goma', $alert->data['message']);
         $this->assertStringContainsString('355,99 AED', $alert->data['message']);
@@ -93,7 +88,6 @@ class InterAgencyPaymentNotificationsTest extends TestCase
 
     public function test_payout_queue_contains_only_unpaid_incoming_transfers_and_preserves_filters(): void
     {
-        $this->approve();
         $ready = Transfer::factory()->create(['destination_branch_id' => $this->dubai->branch_id, 'status' => TransferStatus::ReadyForPayout]);
         Transfer::factory()->create(['source_branch_id' => $this->dubai->branch_id, 'status' => TransferStatus::Approved]);
         Transfer::factory()->create(['destination_branch_id' => $this->otherCashier->branch_id, 'status' => TransferStatus::Approved]);
@@ -112,7 +106,6 @@ class InterAgencyPaymentNotificationsTest extends TestCase
 
     public function test_failed_or_unconfirmed_payment_does_not_notify_goma_of_payment(): void
     {
-        $this->approve();
         $this->actingAs($this->dubai)->post(route('transfers.pay', $this->transfer))->assertSessionHasErrors('confirmed');
         $this->post(route('transfers.pay', $this->transfer), ['confirmed' => '1'])->assertSessionHasErrors('payment');
         $this->assertFalse($this->goma->notifications()->get()->contains(fn ($notification): bool => $notification->data['event'] === 'paid'));
@@ -121,7 +114,6 @@ class InterAgencyPaymentNotificationsTest extends TestCase
 
     public function test_payment_button_requires_enough_cash_and_balance_is_rechecked_on_confirmation(): void
     {
-        $this->approve();
         $account = CashAccount::factory()->create(['branch_id' => $this->dubai->branch_id, 'currency' => 'AED', 'balance' => '355.98']);
         $page = $this->actingAs($this->dubai)->get(route('transfers.show', $this->transfer))
             ->assertViewHas('canPayFromCash', false)->assertSee('355,98 AED')->assertSee('Solde insuffisant.');
@@ -141,16 +133,10 @@ class InterAgencyPaymentNotificationsTest extends TestCase
 
     public function test_source_cashier_cannot_open_payout_queue_and_other_agency_cannot_open_alert(): void
     {
-        $this->approve();
         $this->actingAs($this->goma)->get(route('dashboard'))->assertDontSee('Transferts à payer');
         $this->get(route('transfers.index', ['awaiting_payout' => 1]))->assertForbidden();
-        $alert = $this->dubai->notifications()->get()->first(fn ($notification) => $notification->data['event'] === 'approved');
+        $alert = $this->dubai->notifications()->get()->first(fn ($notification) => $notification->data['event'] === 'created');
         $this->actingAs($this->otherCashier)->post(route('notifications.open', $alert->id))->assertNotFound();
         $this->post(route('transfers.pay', $this->transfer), ['confirmed' => '1'])->assertForbidden();
-    }
-
-    private function approve(): void
-    {
-        $this->actingAs($this->manager)->post(route('transfers.approve', $this->transfer), ['confirmed' => '1'])->assertSessionHasNoErrors();
     }
 }

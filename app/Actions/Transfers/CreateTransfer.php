@@ -31,14 +31,15 @@ final class CreateTransfer
     public function review(User $actor, array $input): array
     {
         $prepared = $this->input->prepare($actor, $input);
-        $pricing = $this->pricing->quote($prepared['source'], $prepared['destination'], $prepared['data']['amount_received']);
+        $pricing = $this->pricing->quote($prepared['source'], $prepared['destination'], $prepared['data']['amount_received'],
+            $prepared['data']['custom_fee_percentage'] ?? null);
         $snapshot = [];
         foreach (['sender', 'beneficiary'] as $party) {
             $snapshot[$party] = $prepared[$party]?->only(['first_name', 'last_name', 'phone', 'country', 'city'])
                 ?? collect(PersonRules::nameAttributes($prepared['data'][$party]))->only(['first_name', 'last_name', 'phone', 'country', 'city'])->all();
         }
         $fingerprint = hash('sha256', json_encode([
-            $pricing['quote']->attributes(), $pricing['rate']?->id, $pricing['fee']->id,
+            $pricing['quote']->attributes(), $pricing['rate']?->id, $pricing['fee']?->id,
             $prepared['source']->default_currency, $prepared['destination']->default_currency, $snapshot,
         ], JSON_THROW_ON_ERROR));
 
@@ -89,8 +90,9 @@ final class CreateTransfer
                 'source_branch_id' => $source->id, 'destination_branch_id' => $review['destination']->id,
                 'source_currency' => $source->default_currency, 'destination_currency' => $review['destination']->default_currency,
                 'created_by' => $actor->id, 'exchange_rate_id' => $review['rate']?->id,
-                'transfer_fee_rule_id' => $review['fee']->id, 'parties_snapshot' => $review['snapshot'],
-                'status' => TransferStatus::Pending, 'notes' => $review['data']['notes'] ?? null,
+                'transfer_fee_rule_id' => $review['fee']?->id, 'parties_snapshot' => $review['snapshot'],
+                'status' => TransferStatus::Approved, 'approved_by' => $actor->id, 'approved_at' => now('UTC'),
+                'notes' => $review['data']['notes'] ?? null,
             ])->save();
             $account->forceFill(['balance' => (string) $after])->save();
             $movement = new CashMovement;
@@ -103,7 +105,9 @@ final class CreateTransfer
             $event = new TransferEvent;
             $event->forceFill([
                 'transfer_id' => $transfer->id, 'user_id' => $actor->id, 'action' => 'TRANSFER_CREATED',
-                'new_values' => [...$review['quote']->attributes(), 'status' => TransferStatus::Pending->value, 'cash_movement_id' => $movement->id],
+                'new_values' => [...$review['quote']->attributes(), 'status' => TransferStatus::Approved->value,
+                    'fee_mode' => $review['data']['fee_mode'], 'transfer_fee_rule_id' => $review['fee']?->id,
+                    'approved_by' => $actor->id, 'approved_at' => $transfer->approved_at, 'cash_movement_id' => $movement->id],
                 'ip_address' => $ip,
             ])->save();
 

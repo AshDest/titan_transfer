@@ -21,10 +21,16 @@ final class TransferInput
         if (isset($input['amount_received']) && is_string($input['amount_received'])) {
             $input['amount_received'] = str_replace(',', '.', trim($input['amount_received']));
         }
+        $input['fee_mode'] ??= 'configured';
+        if (is_string($input['custom_fee_percentage'] ?? null)) {
+            $input['custom_fee_percentage'] = str_replace(',', '.', trim($input['custom_fee_percentage']));
+        }
         $rules = [
             'source_branch_id' => ['required', 'integer', 'exists:branches,id'],
             'destination_branch_id' => ['required', 'integer', 'different:source_branch_id', 'exists:branches,id'],
             'amount_received' => ['required', 'string', 'regex:/^\d{1,16}(\.\d{1,2})?$/D', 'gt:0'],
+            'fee_mode' => ['required', 'in:configured,custom_percentage'],
+            'custom_fee_percentage' => ['exclude_unless:fee_mode,custom_percentage', 'required', 'string', 'regex:/^(0|[1-9][0-9]{0,2})(\.[0-9]{1,4})?$/D', 'numeric', 'gte:0', 'lt:100'],
             'sender_mode' => ['required', 'in:existing,new'],
             'beneficiary_mode' => ['required', 'in:existing,new'],
             'sender_id' => ['exclude_unless:sender_mode,existing', 'required', 'integer'],
@@ -43,7 +49,11 @@ final class TransferInput
                     fn (string $rule): string => str_replace(['required_with:', 'exclude_with:'], ['required_with:'.$party.'.', 'exclude_with:'.$party.'.'], $rule), $fieldRules)];
             }
         }
-        $data = Validator::make($input, $rules)->validate();
+        $data = Validator::make($input, $rules, [
+            'custom_fee_percentage.required' => 'Saisissez le pourcentage personnalisé, ou 0 pour un transfert sans frais.',
+            'custom_fee_percentage.regex' => 'Saisissez un pourcentage positif ou nul, avec au maximum quatre décimales.',
+            'custom_fee_percentage.lt' => 'Le pourcentage doit être inférieur à 100 % pour laisser un montant au bénéficiaire.',
+        ])->validate();
         foreach (['sender', 'beneficiary'] as $party) {
             if ($data[$party.'_mode'] === 'new') {
                 $data[$party]['last_name'] ??= null;

@@ -58,7 +58,9 @@ class TransferInitiationTest extends TestCase
         $response = $this->post(route('transfers.store'), ['review_token' => $token, 'cash_received' => '1', 'payout_amount' => '999999', 'status' => 'PAID']);
         $transfer = Transfer::sole();
         $response->assertRedirect(route('transfers.show', $transfer))->assertSessionHasNoErrors();
-        $this->assertSame(TransferStatus::Pending, $transfer->status);
+        $this->assertSame(TransferStatus::Approved, $transfer->status);
+        $this->assertSame($this->cashier->id, $transfer->approved_by);
+        $this->assertNotNull($transfer->approved_at);
         $this->assertSame('355.99', $transfer->payout_amount);
         $this->assertSame('100.00', CashAccount::sole()->balance);
         $this->assertSame('0.00', CashMovement::sole()->balance_before);
@@ -89,7 +91,7 @@ class TransferInitiationTest extends TestCase
         $this->get(route('transfers.show', $transfer))->assertOk()
             ->assertSee('data-auto-print', false)->assertSee('data-thermal-receipt', false)
             ->assertSee('REÇU D’ENCAISSEMENT')->assertSee('355,99 AED')
-            ->assertSee('En attente de validation')->assertSee('Imprimer le reçu · 80 mm');
+            ->assertSee('Validé')->assertDontSee('En attente de validation')->assertSee('Imprimer le reçu · 80 mm');
         $this->get(route('transfers.show', $transfer))->assertOk()
             ->assertDontSee('data-auto-print', false)->assertSee('data-print-receipt', false);
         $this->assertDatabaseCount('transfers', 1);
@@ -142,14 +144,14 @@ class TransferInitiationTest extends TestCase
         $this->getJson(route('transfers.people', ['branch_id' => $this->destination->id, 'kind' => 'sender']))->assertForbidden();
     }
 
-    public function test_destination_cashier_can_view_pending_transfer_but_cannot_initiate_or_pay_it(): void
+    public function test_destination_cashier_sees_validated_transfer_but_cannot_pay_without_cash(): void
     {
         $transfer = $this->createOperation();
         $destinationCashier = User::factory()->for($this->destination)->create()->assignRole(Role::DestinationCashier->value);
         $this->actingAs($destinationCashier)->get(route('transfers.create'))->assertForbidden();
         $this->post(route('transfers.preview'), $this->input())->assertForbidden();
         $this->get(route('transfers.index'))->assertOk()->assertSee($transfer->reference);
-        $this->get(route('transfers.show', $transfer))->assertOk()->assertDontSee('Confirmer le paiement');
+        $this->get(route('transfers.show', $transfer))->assertOk()->assertSee('Confirmer le paiement')->assertSee('Solde insuffisant.');
         $this->post(route('transfers.pay', $transfer), ['confirmed' => '1'])->assertSessionHasErrors('payment');
     }
 

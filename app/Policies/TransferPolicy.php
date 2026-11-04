@@ -50,6 +50,11 @@ class TransferPolicy
             && $user->hasAnyRole([Role::Administrator->value, Role::DestinationCashier->value]);
     }
 
+    public function cancel(User $user, Transfer $transfer): bool
+    {
+        return $this->canReview($user, $transfer) && $user->can('transfers.cancel');
+    }
+
     public function pay(User $user, Transfer $transfer): bool
     {
         return $this->payAny($user) && $this->view($user, $transfer)

@@ -14,8 +14,8 @@ final class TransferPricing
 {
     public function __construct(private TransferCalculator $calculator) {}
 
-    /** @return array{quote: TransferQuote, rate: ?ExchangeRate, fee: TransferFeeRule} */
-    public function quote(Branch $source, Branch $destination, string $amount): array
+    /** @return array{quote: TransferQuote, rate: ?ExchangeRate, fee: ?TransferFeeRule} */
+    public function quote(Branch $source, Branch $destination, string $amount, ?string $customPercentage = null): array
     {
         $at = now('UTC');
         $rate = null;
@@ -28,6 +28,9 @@ final class TransferPricing
             if (! $rate) {
                 throw ValidationException::withMessages(['destination_branch_id' => 'Aucun taux de change actif et valide actuellement pour '.$source->default_currency.' → '.$destination->default_currency.'. Contactez votre administrateur pour vérifier les devises, l’activation et les dates de validité (UTC).']);
             }
+        }
+        if ($customPercentage !== null) {
+            return ['quote' => $this->calculator->calculate($amount, $customPercentage, $rate?->rate ?? '1.000000'), 'rate' => $rate, 'fee' => null];
         }
         $amountValue = BigDecimal::of($amount);
         /** Keep removed versions until version selection to prevent reviving an older tariff. */

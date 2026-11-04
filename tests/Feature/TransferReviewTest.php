@@ -2,24 +2,20 @@
 
 namespace Tests\Feature;
 
-use App\Actions\Transfers\CreateTransfer;
 use App\Actions\Transfers\ReviewTransfer;
 use App\Enums\Role;
 use App\Enums\TransferStatus;
-use App\Models\Beneficiary;
 use App\Models\Branch;
 use App\Models\CashAccount;
-use App\Models\Customer;
-use App\Models\ExchangeRate;
+use App\Models\CashMovement;
 use App\Models\InboxNotification;
 use App\Models\Transfer;
 use App\Models\TransferEvent;
-use App\Models\TransferFeeRule;
 use App\Models\User;
+use App\Services\OperationNotifications;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -44,15 +40,13 @@ class TransferReviewTest extends TestCase
         $this->cashier = User::factory()->for($source)->create()->assignRole(Role::SourceCashier->value);
         $this->manager = User::factory()->for($source)->create()->assignRole(Role::Manager->value);
         $this->destinationCashier = User::factory()->for($destination)->create()->assignRole(Role::DestinationCashier->value);
-        ExchangeRate::factory()->create();
-        TransferFeeRule::factory()->create();
-        $sender = Customer::factory()->create(['branch_id' => $source->id]);
-        $beneficiary = Beneficiary::factory()->create(['branch_id' => $source->id, 'customer_id' => $sender->id]);
-        $input = ['source_branch_id' => $source->id, 'destination_branch_id' => $destination->id, 'amount_received' => '100.00',
-            'sender_mode' => 'existing', 'sender_id' => $sender->id, 'beneficiary_mode' => 'existing', 'beneficiary_id' => $beneficiary->id];
-        $action = app(CreateTransfer::class);
-        $review = $action->review($this->cashier, $input);
-        $this->transfer = $action->handle($this->cashier, $input, $review['fingerprint'], (string) Str::uuid(), null);
+        $this->transfer = Transfer::factory()->create([
+            'source_branch_id' => $source->id, 'destination_branch_id' => $destination->id,
+            'created_by' => $this->cashier->id, 'status' => TransferStatus::Pending,
+        ]);
+        CashMovement::factory()->create(['transfer_id' => $this->transfer->id]);
+        TransferEvent::factory()->create(['transfer_id' => $this->transfer->id]);
+        app(OperationNotifications::class)->record($this->transfer, $this->cashier);
     }
 
     public function test_manager_approves_with_audit_notification_and_unchanged_financial_snapshot(): void
@@ -73,7 +67,7 @@ class TransferReviewTest extends TestCase
         $this->assertSame('APPROVED', $event->new_values['status']);
         $this->assertSame($this->manager->id, $event->user_id);
         $this->assertSame('approved', $this->destinationCashier->notifications()->get()->first(fn ($notification) => $notification->data['event'] === 'approved')->data['event']);
-        $this->actingAs($this->destinationCashier)->get(route('transfers.show', $transfer))->assertOk()->assertSee('Approuvé par')->assertDontSee('Approuver le transfert');
+        $this->actingAs($this->destinationCashier)->get(route('transfers.show', $transfer))->assertOk()->assertSee('Validé par')->assertDontSee('Approuver le transfert');
     }
 
     public function test_rejection_requires_reason_and_does_not_claim_to_refund_money(): void

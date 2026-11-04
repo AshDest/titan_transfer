@@ -17,7 +17,7 @@ enum TransferStatus: string
     {
         return match ($this) {
             self::Draft => 'Brouillon', self::Pending => 'En attente de validation',
-            self::Approved => 'Approuvé', self::ReadyForPayout => 'Prêt au retrait',
+            self::Approved => 'Validé', self::ReadyForPayout => 'Prêt au retrait',
             self::Paid => 'Payé', self::Rejected => 'Rejeté', self::Cancelled => 'Annulé', self::Reversed => 'Extourné',
         };
     }
@@ -29,7 +29,7 @@ enum TransferStatus: string
             self::Draft => [self::Pending],
             self::Pending => [self::Approved, self::Rejected, self::Cancelled],
             self::Approved => [self::ReadyForPayout, self::Paid, self::Cancelled],
-            self::ReadyForPayout => [self::Paid],
+            self::ReadyForPayout => [self::Paid, self::Cancelled],
             self::Paid => [self::Reversed],
             self::Rejected, self::Cancelled, self::Reversed => [],
         };

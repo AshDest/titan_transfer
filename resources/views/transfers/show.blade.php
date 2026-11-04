@@ -11,9 +11,13 @@
             @endforeach
         </div>
         <x-transfer-summary :fee-type="$transfer->fee_type" :amount="$transfer->amount_received" :percentage="$transfer->fee_percentage" :fee="$transfer->fee_amount" :net="$transfer->net_amount" :rate="$transfer->exchange_rate" :payout="$transfer->payout_amount" :source-currency="$transfer->source_currency" :destination-currency="$transfer->destination_currency" />
+        @if($transfer->transfer_fee_rule_id === null)<p class="field-hint">Pourcentage personnalisé : @percentage($transfer->fee_percentage) %</p>@endif
         @if($transfer->notes)<p class="form-context">{{ $transfer->notes }}</p>@endif
         @if($transfer->status === \App\Enums\TransferStatus::Pending)<p class="form-context">Encaissement enregistré. Le transfert attend sa validation avant la mise à disposition des fonds.</p>@endif
-        @if($transfer->approved_at)<p class="form-context">Approuvé par <strong>{{ $transfer->approvedBy->name }}</strong> le {{ $transfer->approved_at->timezone(auth()->user()->branch?->timezone ?? 'UTC')->format('d/m/Y H:i') }}.</p>@endif
+        @if($transfer->approved_at)<p class="form-context">Validé par <strong>{{ $transfer->approvedBy->name }}</strong> le {{ $transfer->approved_at->timezone(auth()->user()->branch?->timezone ?? 'UTC')->format('d/m/Y H:i') }}.</p>@endif
+        @if($cancellation = $transfer->events->firstWhere('action', 'TRANSFER_CANCELLED'))
+            <div class="form-context rejection-context"><strong>Annulé par {{ $cancellation->actor->name }} le {{ $cancellation->created_at->timezone(auth()->user()->branch?->timezone ?? 'UTC')->format('d/m/Y H:i') }}</strong><p>{{ $cancellation->new_values['cancellation_reason'] }}</p><p>Le dépôt reste en caisse jusqu’au remboursement effectif du client.</p></div>
+        @endif
         @if($transfer->paid_at)<p class="form-context">Payé par <strong>{{ $transfer->paidBy->name }}</strong> le {{ $transfer->paid_at->timezone($transfer->destinationBranch->timezone)->format('d/m/Y H:i') }} · {{ $transfer->destinationBranch->name }}.</p>@endif
         @if($transfer->rejected_at)<div class="form-context rejection-context"><strong>Rejeté par {{ $transfer->rejectedBy->name }}</strong><p>{{ $transfer->rejection_reason }}</p><p>Le dépôt reste en caisse jusqu’au remboursement effectif du client.</p></div>@endif
         <p class="field-hint receipt-print-help">Impression thermique : papier 80 mm, échelle 100 %, en-têtes et pieds de page désactivés.</p>
@@ -61,8 +65,22 @@
             </section>
         @endcan
     @endif
+    @if($transfer->status->canTransitionTo(\App\Enums\TransferStatus::Cancelled))
+        @can('cancel', $transfer)
+            <section class="review-decision" aria-labelledby="cancellation-title">
+                <h2 id="cancellation-title">Annuler le transfert</h2>
+                <form method="POST" action="{{ route('transfers.cancel', $transfer) }}" data-review-transfer>
+                    @csrf
+                    <div class="field"><label for="cancellation_reason">Motif de l’annulation</label><textarea class="form-control" name="cancellation_reason" id="cancellation_reason" rows="3" minlength="5" maxlength="1000" required>{{ is_string(old('cancellation_reason')) ? old('cancellation_reason') : '' }}</textarea></div>
+                    <p class="field-hint">L’annulation bloque le retrait. Le remboursement du client doit être enregistré séparément en sortie de caisse.</p>
+                    <label class="cash-confirmation"><input type="checkbox" name="confirmed" value="1" required> Je confirme l’annulation de ce transfert.</label>
+                    <button type="submit" class="danger-button">Confirmer l’annulation</button>
+                </form>
+            </section>
+        @endcan
+    @endif
     <section class="transfer-history"><h2>Historique</h2>
-        @foreach($transfer->events as $event)<p><strong>{{ $event->created_at->format('d/m/Y H:i') }}</strong> · {{ match($event->action) { 'TRANSFER_CREATED' => 'Opération créée et dépôt en caisse enregistré', 'TRANSFER_APPROVED' => 'Transfert approuvé', 'TRANSFER_REJECTED' => 'Transfert rejeté', 'TRANSFER_PAID' => 'Bénéficiaire payé et caisse de retrait débitée', default => $event->action } }} · {{ $event->actor->name }}</p>@endforeach
+        @foreach($transfer->events as $event)<p><strong>{{ $event->created_at->format('d/m/Y H:i') }}</strong> · {{ match($event->action) { 'TRANSFER_CREATED' => 'Opération créée et dépôt en caisse enregistré', 'TRANSFER_APPROVED' => 'Transfert approuvé', 'TRANSFER_REJECTED' => 'Transfert rejeté', 'TRANSFER_CANCELLED' => 'Transfert annulé et retrait bloqué', 'TRANSFER_PAID' => 'Bénéficiaire payé et caisse de retrait débitée', default => $event->action } }} · {{ $event->actor->name }}</p>@endforeach
     </section>
     <x-thermal-receipt :transfer="$transfer" :auto-print="$printReceipt" />
 </x-layouts.workspace>
